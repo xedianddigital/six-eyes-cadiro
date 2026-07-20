@@ -2,8 +2,15 @@
 
 // The discovery review queue. Candidates are ranked by observed spread — the
 // gap between the cheap end and the median of live instant-buyout asks — and
-// every action is manual: open it, track it, or dismiss it. The rotation only
-// proposes; the user decides, because filtered parameters matter.
+// every action is manual: open it or dismiss it. The rotation only proposes;
+// the user decides, because filtered parameters matter.
+//
+// No "track" action on purpose: every generated search this app has tried
+// (see CLAUDE.md) opens on the real trade site with "Sale type: In-person
+// only" selected, and guessing at GGG's filter schema a third time isn't the
+// move. "open" is a real starting point, not a finished search — the user
+// fixes the sale-type filter (and adds any mod/price ranges they want) on
+// the trade site itself, then pastes the corrected URL into Import.
 
 import { ago, chaosText, type CandidateModel } from "./api"
 
@@ -16,7 +23,7 @@ export function DiscoveryPanel({
   candidates: CandidateModel[]
   refreshedAt: number
   league: string
-  onAction: (key: string, action: "track" | "dismiss") => void
+  onAction: (key: string, action: "dismiss") => void
 }) {
   return (
     <div className="rounded-lg border border-neutral-700 bg-[#1a1a1a]">
@@ -28,6 +35,12 @@ export function DiscoveryPanel({
           </span>
         </div>
         <span className="text-xs text-neutral-400">{candidates.length} candidates</span>
+      </div>
+
+      <div className="border-b border-neutral-800 px-4 py-2 text-xs text-neutral-400">
+        "open" is a starting point, not a finished search — GGG's generated filter often needs fixing
+        (Sale type → Buyout, plus whatever mod/price ranges you want) on the trade site. Paste the
+        corrected URL into Import to track it.
       </div>
 
       {candidates.length === 0 ? (
@@ -81,13 +94,6 @@ export function DiscoveryPanel({
                           open
                         </a>
                       ) : null}
-                      <button
-                        onClick={() => onAction(c.key, "track")}
-                        disabled={!v?.url}
-                        className="rounded border border-neutral-600 px-2 py-0.5 text-xs text-neutral-100 hover:bg-neutral-700 disabled:opacity-40"
-                      >
-                        track
-                      </button>
                       <button
                         onClick={() => onAction(c.key, "dismiss")}
                         className="rounded border border-neutral-700 px-2 py-0.5 text-xs text-neutral-400 hover:bg-neutral-700"

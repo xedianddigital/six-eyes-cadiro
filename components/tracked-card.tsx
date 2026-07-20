@@ -11,13 +11,22 @@
 // reached the configured window yet?).
 //
 // Layout is three columns sharing one row height (title+price stacked on the
-// left; span label above the sparkline in the middle; pause/remove stacked
-// on the right, flush to the border) so the sparkline gets the full row
-// height instead of being squeezed into a single text line next to buttons.
+// left; span label above the sparkline in the middle; remove/pause/open
+// stacked on the right, flush to the border) so the sparkline gets the full
+// row height instead of being squeezed into a single text line next to
+// buttons.
 
 import { useState } from "react"
 import { ago, chaosText, divineText, type CardModel } from "./api"
 import { Sparkline } from "./sparkline"
+
+// 22px, not the 24px used elsewhere (e.g. Import's row buttons) — three
+// stacked icon buttons at 24px plus gap-1 no longer fit this column without
+// either squeezing their padding or growing the card past what three of
+// them stacked should cost. 22px was the largest size that still fits
+// cleanly at three-wide with unsquished padding.
+const ICON_BUTTON =
+  "flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded border border-neutral-700 text-xs"
 
 const MEDIAN_TOOLTIP =
   "Median chaos-normalized ask price among the sampled cheapest instant-buyout listings in this window — not the whole market."
@@ -146,17 +155,26 @@ export function TrackedCard({
           <button
             onClick={() => onRemove(card.id)}
             title="Remove"
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-neutral-700 text-xs text-neutral-400 hover:bg-neutral-800 hover:text-red-400"
+            className={ICON_BUTTON + " text-neutral-400 hover:bg-neutral-800 hover:text-red-400"}
           >
             ✕
           </button>
           <button
             onClick={() => onPause(card.id, !card.active)}
             title={card.active ? "Pause" : "Resume"}
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-neutral-700 text-xs text-neutral-300 hover:bg-neutral-800"
+            className={ICON_BUTTON + " text-neutral-300 hover:bg-neutral-800"}
           >
             {card.active ? "⏸" : "▶"}
           </button>
+          <a
+            href={card.url}
+            target="_blank"
+            rel="noreferrer"
+            title="Open on the trade site"
+            className={ICON_BUTTON + " text-neutral-300 hover:bg-neutral-800"}
+          >
+            ↗
+          </a>
         </div>
       </div>
 

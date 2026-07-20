@@ -74,7 +74,7 @@ export default function Page() {
     await refresh()
   }
 
-  const discoveryAction = async (key: string, action: "track" | "dismiss") => {
+  const discoveryAction = async (key: string, action: "dismiss") => {
     try {
       await sendJson("/api/discovery", "POST", { key, action })
       await refresh()

@@ -109,7 +109,7 @@ export async function refreshUniverse(): Promise<void> {
  * non-instant/negotiable listings that then get correctly filtered out
  * after the fetch — a minor sampling-efficiency cost, not a correctness one.
  */
-export function queryFor(name: string): unknown {
+function queryFor(name: string): unknown {
   return {
     query: {
       status: { option: "online" },
