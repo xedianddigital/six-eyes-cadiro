@@ -64,8 +64,31 @@ export async function logEvent(kind: string, message: string, level: LogLevel = 
   }
 }
 
-/** Most recent entries first. */
-export async function getLogs(limit = 500): Promise<LogEntry[]> {
-  const entries = await ensureLoaded()
-  return entries.slice(-limit).reverse()
+export interface LogPage {
+  entries: LogEntry[]
+  /** True if there are older entries beyond this page (within sinceT, if set). */
+  hasMore: boolean
+}
+
+/**
+ * Most recent entries first, paged.
+ *
+ * `sinceT` bounds how far back results go (the caller passes the dashboard's
+ * configured windowHours by default so Logs doesn't default to rendering the
+ * app's entire history as one endless page); `beforeT` is the pagination
+ * cursor — pass the oldest `t` from the previous page to fetch the next
+ * older page. Filtering happens after reversing so `hasMore` reflects
+ * whether there's anything left within the same sinceT bound, not the whole
+ * unbounded log.
+ */
+export async function getLogs(opts: { sinceT?: number; beforeT?: number; limit?: number } = {}): Promise<LogPage> {
+  const { sinceT, beforeT, limit = 100 } = opts
+  const all = await ensureLoaded()
+  let newestFirst = [...all].reverse()
+  if (sinceT != null) newestFirst = newestFirst.filter((e) => e.t >= sinceT)
+  if (beforeT != null) newestFirst = newestFirst.filter((e) => e.t < beforeT)
+  return {
+    entries: newestFirst.slice(0, limit),
+    hasMore: newestFirst.length > limit,
+  }
 }

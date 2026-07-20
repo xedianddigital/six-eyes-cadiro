@@ -14,7 +14,6 @@ import {
   type CandidateModel,
   type DashboardModel,
   type DraftModel,
-  type LogEntryModel,
 } from "@/components/api"
 import { TrackedCard } from "@/components/tracked-card"
 import { DiscoveryPanel } from "@/components/discovery-panel"
@@ -36,21 +35,18 @@ export default function Page() {
   const [dash, setDash] = useState<DashboardModel | null>(null)
   const [discovery, setDiscovery] = useState<DiscoveryModel | null>(null)
   const [drafts, setDrafts] = useState<DraftModel[]>([])
-  const [logs, setLogs] = useState<LogEntryModel[]>([])
   const { confirm, alert, dialog } = useConfirm()
 
   const refresh = useCallback(async () => {
     try {
-      const [d, disc, dr, lg] = await Promise.all([
+      const [d, disc, dr] = await Promise.all([
         getJson<DashboardModel>("/api/tracked"),
         getJson<DiscoveryModel>("/api/discovery"),
         getJson<{ drafts: DraftModel[] }>("/api/drafts"),
-        getJson<{ logs: LogEntryModel[] }>("/api/logs"),
       ])
       setDash(d)
       setDiscovery(disc)
       setDrafts(dr.drafts)
-      setLogs(lg.logs)
     } catch {
       // Server briefly unavailable (restart); the next interval retries.
     }
@@ -124,7 +120,7 @@ export default function Page() {
           {tabButton("tracked", "Dashboard", dash?.cards.length)}
           {tabButton("import", "Import", drafts.length)}
           {tabButton("discovery", "Discovery", discovery?.candidates.length)}
-          {tabButton("logs", "Logs", logs.length)}
+          {tabButton("logs", "Logs")}
         </nav>
         <div className="ml-auto flex items-center gap-3">
           <SessionPanel onChanged={() => void refresh()} />
@@ -140,7 +136,14 @@ export default function Page() {
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[1920px]:grid-cols-6">
             {dash?.cards.map((card) => (
-              <TrackedCard key={card.id} card={card} onPause={pause} onRemove={remove} onRename={rename} />
+              <TrackedCard
+                key={card.id}
+                card={card}
+                divineRate={dash.divine.rate}
+                onPause={pause}
+                onRemove={remove}
+                onRename={rename}
+              />
             ))}
           </div>
         )
@@ -164,7 +167,7 @@ export default function Page() {
         />
       ) : null}
 
-      {tab === "logs" ? <LogsPanel logs={logs} /> : null}
+      {tab === "logs" ? <LogsPanel windowHours={dash?.windowHours ?? 6} /> : null}
 
       <footer className="mt-4 text-center text-xs text-neutral-600">
         Reads listings slowly through GGG&apos;s published rate limits. No automation of gameplay, no

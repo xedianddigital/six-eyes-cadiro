@@ -4,22 +4,27 @@
 // second screen with dozens of these visible at once with no scrolling, not
 // to be read one at a time. Reading order still mirrors the decision — name,
 // price, direction — just packed tighter than a single-card layout would be.
-// Height is a hard constraint here: every row costs cards-per-screen, so
-// new-per-hour stays tooltip-only, but the sample size (n=) behind the
-// median and the graph's actual window coverage are both load-bearing for
-// trusting the number at a glance — they're folded into the existing price
-// and sparkline rows instead of a tooltip, per explicit feedback that
-// hiding them made mispricing counts hard to trust (was it 4 listings or
-// 40? has the graph even reached the configured window yet?).
+// Height is a hard constraint here: every row costs cards-per-screen, but the
+// sample size behind the median and the graph's actual window coverage are
+// both load-bearing for trusting the number at a glance, so they're visible
+// text rather than tooltip-only (was it 4 listings or 40? has the graph even
+// reached the configured window yet?).
+//
+// Layout is three columns sharing one row height (title+price stacked on the
+// left; span label above the sparkline in the middle; pause/remove stacked
+// on the right, flush to the border) so the sparkline gets the full row
+// height instead of being squeezed into a single text line next to buttons.
 
 import { useState } from "react"
-import { ago, chaosText, type CardModel } from "./api"
+import { ago, chaosText, divineText, type CardModel } from "./api"
 import { Sparkline } from "./sparkline"
 
 const MEDIAN_TOOLTIP =
   "Median chaos-normalized ask price among the sampled cheapest instant-buyout listings in this window — not the whole market."
 const MISPRICED_TOOLTIP =
   "Live count of listings priced at or below 50% / 75% of the median above — not a percentile, an actual mispricing signal. Normally 0; nonzero means someone's underpricing right now."
+const LISTINGS_TOOLTIP =
+  "Distinct instant-buyout listings observed in this window — the sample size behind the median above. Judge its confidence accordingly: 4 listings and 40 aren't equally trustworthy."
 const SPAN_TOOLTIP =
   "How much of the configured window the graph actually covers so far. A search polled only recently hasn't reached the full window yet — treat its trend as less certain until this reaches the target."
 
@@ -30,11 +35,14 @@ function spanLabel(spanHours: number, windowHours: number): string {
 
 export function TrackedCard({
   card,
+  divineRate,
   onPause,
   onRemove,
   onRename,
 }: {
   card: CardModel
+  /** Current chaos-per-divine rate, for the divine-equivalent shown next to the median. */
+  divineRate: number
   onPause: (id: string, active: boolean) => void
   onRemove: (id: string) => void
   onRename: (id: string, title: string) => void
@@ -44,6 +52,7 @@ export function TrackedCard({
     s.trend === "rising" ? "text-green-400" : s.trend === "falling" ? "text-red-400" : "text-neutral-400"
   const [editing, setEditing] = useState(false)
   const [draftTitle, setDraftTitle] = useState(card.title)
+  const divine = divineText(s.p50, divineRate)
 
   const commitRename = () => {
     setEditing(false)
@@ -58,8 +67,8 @@ export function TrackedCard({
     <div
       className={`rounded-lg border border-neutral-700 bg-[#1a1a1a] p-2 ${card.active ? "" : "opacity-50"}`}
     >
-      <div className="mb-0.5 flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
+      <div className="flex items-stretch gap-2">
+        <div className="flex min-w-0 flex-1 flex-col justify-between">
           {editing ? (
             <input
               autoFocus
@@ -98,15 +107,27 @@ export function TrackedCard({
               </button>
             </div>
           )}
-        </div>
-        <div className="flex shrink-0 gap-1">
-          <button
-            onClick={() => onPause(card.id, !card.active)}
-            title={card.active ? "Pause" : "Resume"}
-            className="rounded border border-neutral-700 px-1.5 py-0.5 text-xs text-neutral-300 hover:bg-neutral-800"
+          <div
+            className="flex items-baseline gap-1"
+            title={`${MEDIAN_TOOLTIP}${divine ? ` Divine equivalent at the app's current rate (${Math.round(divineRate)}c = 1 divine).` : ""}`}
           >
-            {card.active ? "⏸" : "▶"}
-          </button>
+            <span className="text-xl font-semibold tabular-nums text-neutral-50">{chaosText(s.p50)}</span>
+            <span className="text-xs text-neutral-400">
+              c{divine ? ` | ${divine}d` : ""} median
+            </span>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-center justify-between gap-0.5">
+          {s.series.length >= 2 ? (
+            <span className="text-[9px] tabular-nums text-neutral-500" title={SPAN_TOOLTIP}>
+              {spanLabel(s.spanHours, s.windowHours)}
+            </span>
+          ) : null}
+          <Sparkline series={s.series} trend={s.trend} gapMarkers={s.gapMarkers} width={76} height={34} />
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end justify-between gap-1">
           <button
             onClick={() => onRemove(card.id)}
             title="Remove"
@@ -114,23 +135,13 @@ export function TrackedCard({
           >
             ✕
           </button>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-baseline gap-1" title={`${MEDIAN_TOOLTIP} n=${s.count} is the sample size behind it.`}>
-          <span className="text-xl font-semibold tabular-nums text-neutral-50">{chaosText(s.p50)}</span>
-          <span className="text-xs text-neutral-400">
-            c median · n={s.count}
-          </span>
-        </div>
-        <div className="flex flex-col items-end gap-0.5">
-          <Sparkline series={s.series} trend={s.trend} gapMarkers={s.gapMarkers} width={64} height={20} />
-          {s.series.length >= 2 ? (
-            <span className="text-[9px] tabular-nums text-neutral-500" title={SPAN_TOOLTIP}>
-              {spanLabel(s.spanHours, s.windowHours)}
-            </span>
-          ) : null}
+          <button
+            onClick={() => onPause(card.id, !card.active)}
+            title={card.active ? "Pause" : "Resume"}
+            className="rounded border border-neutral-700 px-1.5 py-0.5 text-xs text-neutral-300 hover:bg-neutral-800"
+          >
+            {card.active ? "⏸" : "▶"}
+          </button>
         </div>
       </div>
 
@@ -141,6 +152,9 @@ export function TrackedCard({
           </span>
           <span className={s.countBelow75PctMedian > 0 ? "font-medium text-amber-400" : "text-neutral-500"}>
             ≤75% {s.countBelow75PctMedian}
+          </span>
+          <span className="text-neutral-500" title={LISTINGS_TOOLTIP}>
+            listings:{s.count}
           </span>
         </span>
         <span className={trendColor} title={metaTooltip}>
