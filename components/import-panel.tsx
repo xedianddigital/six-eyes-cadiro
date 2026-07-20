@@ -7,6 +7,7 @@
 
 import { useRef, useState } from "react"
 import { ago, sendJson, type DraftModel } from "./api"
+import { useConfirm } from "./confirm-dialog"
 
 export function ImportPanel({
   drafts,
@@ -27,6 +28,7 @@ export function ImportPanel({
   const [url, setUrl] = useState("")
   const [addError, setAddError] = useState<string | null>(null)
   const atCap = trackedCount >= maxTracked
+  const { confirm, dialog } = useConfirm()
 
   const addOne = async () => {
     setAddError(null)
@@ -79,7 +81,11 @@ export function ImportPanel({
   }
 
   const clearAll = async () => {
-    if (!confirm(`Discard all ${drafts.length} draft${drafts.length === 1 ? "" : "s"}? This can't be undone.`)) return
+    const ok = await confirm(`Discard all ${drafts.length} draft${drafts.length === 1 ? "" : "s"}? This can't be undone.`, {
+      danger: true,
+      okLabel: "Discard all",
+    })
+    if (!ok) return
     await sendJson("/api/drafts", "DELETE")
     onChanged()
   }
@@ -231,6 +237,8 @@ export function ImportPanel({
           </table>
         )}
       </div>
+
+      {dialog}
     </div>
   )
 }

@@ -12,6 +12,7 @@ import { TrackedCard } from "@/components/tracked-card"
 import { DiscoveryPanel } from "@/components/discovery-panel"
 import { ImportPanel } from "@/components/import-panel"
 import { SessionPanel } from "@/components/session-panel"
+import { useConfirm } from "@/components/confirm-dialog"
 
 interface DiscoveryModel {
   refreshedAt: number
@@ -26,6 +27,7 @@ export default function Page() {
   const [dash, setDash] = useState<DashboardModel | null>(null)
   const [discovery, setDiscovery] = useState<DiscoveryModel | null>(null)
   const [drafts, setDrafts] = useState<DraftModel[]>([])
+  const { confirm, alert, dialog } = useConfirm()
 
   const refresh = useCallback(async () => {
     try {
@@ -59,7 +61,7 @@ export default function Page() {
   }
 
   const remove = async (id: string) => {
-    if (!confirm("Remove this search and its collected history?")) return
+    if (!(await confirm("Remove this search and its collected history?", { danger: true }))) return
     await sendJson(`/api/tracked/${id}`, "DELETE")
     await refresh()
   }
@@ -69,7 +71,7 @@ export default function Page() {
       await sendJson("/api/discovery", "POST", { key, action })
       await refresh()
     } catch (err) {
-      alert((err as Error).message)
+      await alert((err as Error).message)
     }
   }
 
@@ -100,7 +102,7 @@ export default function Page() {
   return (
     <main className="mx-auto max-w-[1920px] px-4 py-3">
       {/* Title, tabs and account controls share one row on purpose — every
-          row here is a row a 40-card grid doesn't get. Scheduler/divine
+          row here is a row a 45-card grid doesn't get. Scheduler/divine
           status moves into the title's tooltip instead of its own line. */}
       <header className="mb-3 flex items-center gap-4 border-b border-neutral-900 pb-3">
         <h1 title={statusTooltip} className="shrink-0 text-base font-semibold text-neutral-100">
@@ -153,6 +155,8 @@ export default function Page() {
         Reads listings slowly through GGG&apos;s published rate limits. No automation of gameplay, no
         trading on your behalf.
       </footer>
+
+      {dialog}
     </main>
   )
 }

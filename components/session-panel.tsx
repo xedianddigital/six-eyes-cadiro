@@ -111,26 +111,34 @@ export function SessionPanel({ onChanged }: { onChanged: () => void }) {
     }
   }
 
+  // info is null both before the first fetch resolves (e.g. right after this
+  // panel remounts on navigating back from Settings) and if the fetch fails.
+  // Treating that the same as "signed out" made a live re-check read as an
+  // actual logout for the split second before it resolves — loading gets its
+  // own neutral state instead.
+  const loading = info === null
   const signedIn = Boolean(info?.configured && info?.valid)
   const expired = Boolean(info?.configured && info?.valid === false)
 
   return (
     <div className="relative flex items-center gap-2">
-      {expired ? (
+      {loading ? <span className="text-xs text-neutral-600">checking session…</span> : null}
+
+      {!loading && expired ? (
         <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-400">expired</span>
       ) : null}
 
-      {!signedIn && isDesktop ? (
+      {!loading && !signedIn && isDesktop ? (
         <button
           onClick={() => void signIn()}
-          disabled={busy || info === null}
+          disabled={busy}
           className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800 disabled:opacity-50"
         >
           {busy ? "Working…" : "Sign in"}
         </button>
       ) : null}
 
-      {!signedIn && !isDesktop ? (
+      {!loading && !signedIn && !isDesktop ? (
         <button
           onClick={() => setManualOpen((v) => !v)}
           className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800"
