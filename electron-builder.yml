@@ -1,0 +1,53 @@
+appId: com.xediand.sixeyescadiro
+productName: SixEyesCadiro
+copyright: Copyright © 2026
+
+directories:
+  output: dist
+  buildResources: build
+
+# No asar: the Next server is forked as a child process, which is simplest and
+# most reliable against real files on disk. Same reasoning as SpeedyCadiro.
+asar: false
+
+files:
+  - electron/**/*
+  - package.json
+  # Build-time only weight that the runtime server never touches.
+  - '!node_modules/@img/**'          # sharp: images.unoptimized is set
+  - '!node_modules/@next/swc-*/**'   # SWC compiles at build time, not runtime
+  - '!node_modules/**/*.md'
+  - '!node_modules/**/*.map'
+  - '!node_modules/**/test/**'
+  - '!node_modules/**/tests/**'
+  - '!node_modules/**/docs/**'
+  - from: .next/standalone
+    to: server
+    filter:
+      - '**/*'
+      # The default glob skips dot-directories, and the compiled server and its
+      # static assets all live under .next.
+      - '.next/**/*'
+      # Never ship local session data or collected market history.
+      - '!.data'
+      - '!.data/**'
+      - '!**/.data/**'
+
+# No native modules to rebuild against Electron's ABI — deliberately kept that
+# way (JSONL store instead of sqlite).
+npmRebuild: false
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+nsis:
+  oneClick: true
+  perMachine: false
+  allowToChangeInstallationDirectory: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
