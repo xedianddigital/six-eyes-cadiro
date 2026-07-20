@@ -6,7 +6,12 @@
 // the order of tens of minutes, so this client refuses to call any endpoint
 // more than once per REFRESH_FLOOR_MS and callers cache on top of that.
 
-const NINJA_BASE = "https://poe.ninja/api/data"
+// Confirmed against poe.ninja's published API reference (poe.ninja/docs/api)
+// on first live run: the old flat /api/data/* paths 404 — poe.ninja split
+// PoE1/PoE2 under /poe1/api/economy/... and /poe2/api/economy/... when PoE2
+// launched. Field names on the lines[] we read (chaosValue, chaosEquivalent,
+// listingCount, currencyTypeName, detailsId) are unchanged.
+const NINJA_BASE = "https://poe.ninja/poe1/api/economy"
 const REFRESH_FLOOR_MS = 10 * 60 * 1000
 
 const lastCall = new Map<string, number>()
@@ -17,7 +22,10 @@ async function ninjaJson<T>(url: string): Promise<T | null> {
   lastCall.set(url, Date.now())
   try {
     const res = await fetch(url, {
-      headers: { Accept: "application/json", "User-Agent": "six-eyes-cadiro/0.1 (market dashboard)" },
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "six-eyes-cadiro/0.1 (+https://github.com/xedianddigital/six-eyes-cadiro)",
+      },
       cache: "no-store",
     })
     if (!res.ok) return null
@@ -35,7 +43,7 @@ interface CurrencyOverview {
 
 /** chaos per divine, or null when unavailable/too soon to re-ask. */
 export async function fetchDivineRate(league: string): Promise<number | null> {
-  const url = `${NINJA_BASE}/currencyoverview?league=${encodeURIComponent(league)}&type=Currency`
+  const url = `${NINJA_BASE}/stash/current/currency/overview?league=${encodeURIComponent(league)}&type=Currency`
   const data = await ninjaJson<CurrencyOverview>(url)
   const line = data?.lines?.find((l) => l.currencyTypeName === "Divine Orb")
   const rate = line?.chaosEquivalent
@@ -80,7 +88,7 @@ const UNIQUE_TYPES = [
 export async function fetchUniqueUniverse(league: string): Promise<NinjaItem[]> {
   const out: NinjaItem[] = []
   for (const type of UNIQUE_TYPES) {
-    const url = `${NINJA_BASE}/itemoverview?league=${encodeURIComponent(league)}&type=${type}`
+    const url = `${NINJA_BASE}/stash/current/item/overview?league=${encodeURIComponent(league)}&type=${type}`
     const data = await ninjaJson<ItemOverview>(url)
     for (const line of data?.lines ?? []) {
       if (!line.name || typeof line.chaosValue !== "number") continue
