@@ -80,7 +80,7 @@ export function TrackedCard({
 
   return (
     <div
-      className={`rounded-lg border border-neutral-700 bg-[#1a1a1a] p-0.5 ${card.active ? "" : "opacity-50"}`}
+      className={`rounded-lg border border-neutral-700 bg-[#1a1a1a] p-1 ${card.active ? "" : "opacity-50"}`}
     >
       <div className="flex items-center gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">

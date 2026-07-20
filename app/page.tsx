@@ -134,7 +134,7 @@ export default function Page() {
             every ~20 minutes; cards fill in as history accumulates.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[1920px]:grid-cols-6">
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[1920px]:grid-cols-6">
             {dash?.cards.map((card) => (
               <TrackedCard
                 key={card.id}
