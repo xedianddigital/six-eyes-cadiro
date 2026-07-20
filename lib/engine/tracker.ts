@@ -90,7 +90,10 @@ export async function statsFor(searchId: string, windowHours: number): Promise<S
   const windowMs = windowHours * 3600_000
   const now = Date.now()
   const inWindow = await observationsInWindow(searchId, windowMs, now)
-  const q = quartiles(inWindow.map((o) => o.chaos))
+  const prices = inWindow.map((o) => o.chaos)
+  const median = quartiles(prices).p50
+  const countBelowHalfMedian = median == null ? 0 : prices.filter((p) => p <= median * 0.5).length
+  const countBelow75PctMedian = median == null ? 0 : prices.filter((p) => p <= median * 0.75).length
   const snaps = await snapshotsInWindow(searchId, windowMs, now)
   const series = snaps
     .filter((s) => s.p50 != null)
@@ -102,9 +105,9 @@ export async function statsFor(searchId: string, windowHours: number): Promise<S
     windowHours,
     count: inWindow.length,
     newPerHour: Math.round((fresh / spanHours) * 10) / 10,
-    p25: q.p25,
-    p50: q.p50,
-    p75: q.p75,
+    p50: median,
+    countBelowHalfMedian,
+    countBelow75PctMedian,
     lastTotal: snaps.length ? snaps[snaps.length - 1].total : null,
     trend,
     trendPct: pct == null ? null : Math.round(pct * 10) / 10,

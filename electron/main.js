@@ -234,8 +234,12 @@ async function runLogin() {
           valid: res?.valid !== false,
           found: Object.keys(cookies).filter((k) => cookies[k]),
         })
-      } catch {
-        // Keep polling; the user may still be logging in.
+      } catch (err) {
+        // Previously silent - a failure here (e.g. the local POST timing out
+        // or refusing) left the window open forever with zero signal why.
+        // Keep polling (the user may still be logging in), but log it so a
+        // stuck window is diagnosable instead of a silent mystery.
+        console.error('[login] poll iteration failed:', err && err.message ? err.message : err)
       }
     }, 2000)
 
@@ -278,6 +282,10 @@ function postJson(url, body) {
       },
     )
     req.on('error', reject)
+    // No timeout previously - a hung local request would leave the login
+    // poll loop's promise unsettled forever, which looked identical to "the
+    // window just won't close" from the user's side with no error to see.
+    req.setTimeout(5000, () => req.destroy(new Error('Local session POST timed out after 5s.')))
     req.write(payload)
     req.end()
   })
@@ -343,8 +351,8 @@ async function runUninstall() {
     buttons: ['Uninstall', 'Cancel'],
     defaultId: 1,
     cancelId: 1,
-    title: 'Uninstall SixEyesCadiro',
-    message: 'Uninstall SixEyesCadiro?',
+    title: 'Uninstall Six Eyes Cadiro',
+    message: 'Uninstall Six Eyes Cadiro?',
     detail:
       'The app will close and the uninstaller will open. Your saved session and settings are kept, so reinstalling restores them.',
   })
@@ -361,7 +369,9 @@ async function runUninstall() {
     return { ok: false, unsupported: true }
   }
 
-  const uninstaller = path.join(path.dirname(process.execPath), 'Uninstall SixEyesCadiro.exe')
+  // Must match electron-builder's NSIS uninstaller filename exactly, which
+  // is derived from electron-builder.yml's productName.
+  const uninstaller = path.join(path.dirname(process.execPath), 'Uninstall Six Eyes Cadiro.exe')
   try {
     spawn(uninstaller, [], { detached: true, stdio: 'ignore' }).unref()
   } catch (err) {
@@ -419,9 +429,9 @@ function createWindow() {
     height: 860,
     minWidth: 900,
     minHeight: 600,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#050505',
     show: false,
-    title: 'SixEyesCadiro',
+    title: 'Six Eyes Cadiro',
     // Window/taskbar icon for dev mode and Linux. Packaged Windows builds get
     // theirs from build/icon.ico via electron-builder; macOS ignores this.
     icon: path.join(__dirname, 'icon.png'),

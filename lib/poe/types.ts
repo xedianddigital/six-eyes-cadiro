@@ -79,9 +79,15 @@ export interface SearchStats {
   count: number
   /** Newly appeared listings per hour over the window. */
   newPerHour: number
-  p25: number | null
+  /** Median chaos-normalized ask price among the sampled cheap frontier in the window. */
   p50: number | null
-  p75: number | null
+  /**
+   * How many of the window's listings are priced at or below 50%/75% of
+   * that median — a live mispricing count, not a percentile. By definition
+   * this is usually 0; a nonzero count is the actual signal.
+   */
+  countBelowHalfMedian: number
+  countBelow75PctMedian: number
   /** GGG's total from the most recent poll (includes non-instant listings). */
   lastTotal: number | null
   trend: Trend

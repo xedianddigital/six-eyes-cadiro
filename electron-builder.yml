@@ -1,5 +1,7 @@
+# appId is an internal registry/update identifier, kept as-is regardless of
+# display-name changes — changing it breaks update continuity for real.
 appId: com.xediand.sixeyescadiro
-productName: SixEyesCadiro
+productName: Six Eyes Cadiro
 copyright: Copyright © 2026
 
 directories:

@@ -90,18 +90,29 @@ export default function Page() {
     </button>
   )
 
+  const statusTooltip = [
+    sched ? sched.state : "connecting…",
+    sched?.lastJob ? `last: ${sched.lastJob} ${ago(sched.lastJobAt)}` : null,
+    dash ? `divine ${Math.round(dash.divine.rate)}c (${dash.divine.source})` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+
   return (
-    <main className="mx-auto max-w-[1920px] px-4 py-6">
-      <header className="relative mb-4 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold text-neutral-100">SixEyesCadiro</h1>
-          <div className="text-xs text-neutral-500">
-            {sched ? sched.state : "connecting…"}
-            {sched?.lastJob ? ` · last: ${sched.lastJob} ${ago(sched.lastJobAt)}` : ""}
-            {dash ? ` · divine ${Math.round(dash.divine.rate)}c (${dash.divine.source})` : ""}
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
+    <main className="mx-auto max-w-[1920px] px-4 py-4">
+      {/* Title, tabs and account controls share one row on purpose — every
+          row here is a row a 40-card grid doesn't get. Scheduler/divine
+          status moves into the title's tooltip instead of its own line. */}
+      <header className="mb-4 flex items-center gap-4 border-b border-neutral-900 pb-3">
+        <h1 title={statusTooltip} className="shrink-0 text-base font-semibold text-neutral-100">
+          Six Eyes Cadiro
+        </h1>
+        <nav className="flex gap-1">
+          {tabButton("tracked", "Tracked", dash?.cards.length)}
+          {tabButton("import", "Import", drafts.length)}
+          {tabButton("discovery", "Discovery", discovery?.candidates.length)}
+        </nav>
+        <div className="ml-auto flex items-center gap-3">
           <SessionPanel onChanged={() => void refresh()} />
           <Link
             href="/settings"
@@ -112,12 +123,6 @@ export default function Page() {
           </Link>
         </div>
       </header>
-
-      <nav className="mb-6 flex gap-1 border-b border-neutral-900 pb-3">
-        {tabButton("tracked", "Tracked", dash?.cards.length)}
-        {tabButton("import", "Import", drafts.length)}
-        {tabButton("discovery", "Discovery", discovery?.candidates.length)}
-      </nav>
 
       {tab === "tracked" ? (
         dash && dash.cards.length === 0 ? (
@@ -152,7 +157,7 @@ export default function Page() {
         />
       ) : null}
 
-      <footer className="mt-8 text-center text-xs text-neutral-700">
+      <footer className="mt-4 text-center text-xs text-neutral-600">
         Reads listings slowly through GGG&apos;s published rate limits. No automation of gameplay, no
         trading on your behalf.
       </footer>

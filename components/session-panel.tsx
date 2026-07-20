@@ -5,9 +5,11 @@
 // no bridge, so a manual cookie paste is offered instead.
 //
 // Deliberately quiet when everything's fine: a "session ok" success message
-// sitting in the header forever added nothing actionable. Signed in shows
-// only a Log out button (account details live on the Settings page); signed
-// out is the only state that needs your attention here.
+// (or, briefly, a Log out button) sitting in the header forever added
+// nothing actionable and put a real action right where the old Settings
+// toggle used to live — a plausible misclick. Renders nothing when signed
+// in; Log out lives only on the Settings page now. Signed out is the only
+// state that needs your attention here.
 
 import { useEffect, useState } from "react"
 import { getJson, sendJson } from "./api"
@@ -74,30 +76,12 @@ export function SessionPanel({ onChanged }: { onChanged: () => void }) {
     }
   }
 
-  const logOut = async () => {
-    if (!confirm("Log out? You'll need to sign in again before polling can resume.")) return
-    setBusy(true)
-    try {
-      await sendJson("/api/session", "DELETE")
-      await refresh()
-      onChanged()
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (info?.configured && info.valid) {
-    return (
-      <button
-        onClick={() => void logOut()}
-        disabled={busy}
-        title={info.account ? `Signed in as ${info.account}` : "Signed in"}
-        className="rounded border border-neutral-800 px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-800 disabled:opacity-50"
-      >
-        Log out
-      </button>
-    )
-  }
+  // Deliberately renders nothing when signed in — a header button here
+  // previously sat exactly where the old Settings toggle used to be, which
+  // reads as a plausible cause of an accidental log-out (clicking the
+  // familiar spot expecting Settings). Log out now lives only on the
+  // Settings page, a click that has to be reached deliberately.
+  if (info?.configured && info.valid) return null
 
   return (
     <div className="flex items-center gap-2">

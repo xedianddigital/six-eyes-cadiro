@@ -5,3 +5,5 @@ dist/
 electron/build-info.json
 *.log
 *.tsbuildinfo
+# Internal dev/handoff notes - useful locally, not meant for the public repo.
+CLAUDE.md

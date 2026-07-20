@@ -1,6 +1,8 @@
-# SixEyesCadiro
+# Six Eyes Cadiro
 
-A calm market analyzer for Path of Exile trade listings — the slow, patient
+![Cadiro](cadiro.png)
+
+A dashboard for Path of Exile trade listings — the slow, patient
 counterpart to [SpeedyCadiro](https://github.com/xedianddigital/speedy-cadiro).
 
 Paste official trade search URLs. Each one is polled on a relaxed interval
@@ -39,7 +41,7 @@ aggregate data.
 
 ## Install (Windows)
 
-Download `SixEyesCadiro-Setup-x.y.z.exe` from the latest release and run it.
+Download `Six Eyes Cadiro-Setup-x.y.z.exe` from the latest release and run it.
 SmartScreen will warn on first run because the binary isn't code-signed —
 "More info → Run anyway". The project is open source and built in public.
 
@@ -57,35 +59,13 @@ SmartScreen will warn on first run because the binary isn't code-signed —
    `- variant | url` lines under it). Either way it sits as a draft until you
    click **promote** — that's what actually starts polling it, up to 50.
 4. **Read the cards** — big number = median ask (chaos; divine listings
-   normalized at the live rate). p75 next to it is the top of that same
-   sampled cheap end, not a market-wide figure — hover either for the exact
-   definition. Colored line = direction. Buy-below and stop-buying decisions
-   come from the same glance.
+   normalized at the live rate). Below it, two live counts: how many listings
+   are priced at or below 50% / 75% of that median right now — normally both
+   zero, a nonzero count is an actual mispricing, not a percentile. Colored
+   line = direction. Buy-below and stop-buying decisions come from the same
+   glance.
 5. **Review discovery** — sorted by spread (median vs cheapest decile).
    "Open" shows it on the trade site with your own eyes before you commit.
-
-## Coordination with SpeedyCadiro
-
-If both apps run on the same account, apply the optional 5-line patch in
-`docs/speedy-cadiro-coordination-patch.md`. SpeedyCadiro then notes each
-travel in a timestamp file, and SixEyesCadiro holds all polling for a configurable
-window after every travel, so a snipe never queues behind an analyzer poll.
-
-## Development
-
-```
-pnpm install
-pnpm dev          # Next dev server on :3000; paste cookies manually to sign in
-pnpm electron     # desktop shell against the dev server
-pnpm typecheck
-pnpm dist:win     # NSIS installer (CI does this on windows-latest)
-```
-
-Data lives in `%APPDATA%\six-eyes-cadiro\data\` when packaged, `./.data` in dev:
-`config.json` (session, searches, settings) plus `series/*.jsonl` (append-only
-observations and per-poll snapshots, compacted daily to the retention window).
-No native modules, by design — the Next server is forked as a plain Node
-child, same as SpeedyCadiro.
 
 ## Verify on first live run
 

@@ -16,8 +16,10 @@ const trendLabel: Record<string, string> = {
   unknown: "—",
 }
 
-const PERCENTILE_TOOLTIP =
-  "Percentile of chaos-normalized ask price among the sampled cheapest instant-buyout listings in this window — not the whole market. p50 is the median of that sample; p75 is where the top of the sampled cheap end sits."
+const MEDIAN_TOOLTIP =
+  "Median chaos-normalized ask price among the sampled cheapest instant-buyout listings in this window — not the whole market."
+const MISPRICED_TOOLTIP =
+  "Live count of listings priced at or below 50% / 75% of the median above — not a percentile, an actual mispricing signal. Normally 0; nonzero means someone's underpricing right now."
 
 export function TrackedCard({
   card,
@@ -107,14 +109,20 @@ export function TrackedCard({
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-baseline gap-1.5" title={PERCENTILE_TOOLTIP}>
+        <div className="flex items-baseline gap-1" title={MEDIAN_TOOLTIP}>
           <span className="text-2xl font-semibold tabular-nums text-neutral-50">{chaosText(s.p50)}</span>
-          <span className="text-xs text-neutral-500">c</span>
-          {s.p75 != null ? (
-            <span className="text-xs tabular-nums text-neutral-500">/ {chaosText(s.p75)}c p75</span>
-          ) : null}
+          <span className="text-xs text-neutral-400">c median</span>
         </div>
         <Sparkline series={s.series} trend={s.trend} width={72} height={24} />
+      </div>
+
+      <div className="mt-0.5 flex items-center gap-3 text-[11px] tabular-nums" title={MISPRICED_TOOLTIP}>
+        <span className={s.countBelowHalfMedian > 0 ? "font-medium text-green-400" : "text-neutral-500"}>
+          ≤50% {s.countBelowHalfMedian}
+        </span>
+        <span className={s.countBelow75PctMedian > 0 ? "font-medium text-amber-400" : "text-neutral-500"}>
+          ≤75% {s.countBelow75PctMedian}
+        </span>
       </div>
 
       <div className={`mt-0.5 flex items-center justify-between text-[11px] tabular-nums ${trendColor}`}>
@@ -122,7 +130,7 @@ export function TrackedCard({
           {trendLabel[s.trend]}
           {s.trendPct != null ? ` ${s.trendPct > 0 ? "+" : ""}${s.trendPct}%` : ""}
         </span>
-        <span className="text-neutral-600">
+        <span className="text-neutral-400">
           {s.count} listings · {s.newPerHour}/h new · polled {ago(card.lastPolledAt)}
         </span>
       </div>

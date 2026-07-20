@@ -3,7 +3,7 @@ import "./globals.css"
 import { SettingsBridge } from "@/components/settings-bridge"
 
 export const metadata: Metadata = {
-  title: "SixEyesCadiro",
+  title: "Six Eyes Cadiro",
   description: "Calm market analyzer for Path of Exile trade listings",
 }
 

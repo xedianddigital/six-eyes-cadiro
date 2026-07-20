@@ -132,7 +132,7 @@ export function ImportPanel({
         <div className="flex items-center justify-between gap-3 border-b border-neutral-800 px-4 py-3">
           <div>
             <span className="font-medium text-neutral-100">Import</span>
-            <span className="ml-2 text-xs text-neutral-500">
+            <span className="ml-2 text-xs text-neutral-400">
               {drafts.length} draft{drafts.length === 1 ? "" : "s"} waiting
             </span>
           </div>
@@ -173,15 +173,15 @@ export function ImportPanel({
         ) : null}
 
         {drafts.length === 0 ? (
-          <div className="px-4 py-6 text-sm text-neutral-500">
+          <div className="px-4 py-6 text-sm text-neutral-400">
             No drafts yet. Add one above, or import a .md list — see docs/starter-picks.md for the format.
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-neutral-500">
+              <tr className="text-left text-xs text-neutral-400">
                 <th className="px-4 py-2 font-normal">item</th>
-                <th className="w-2/5 px-2 py-2 font-normal">variant</th>
+                <th className="w-1/4 px-2 py-2 font-normal">variant</th>
                 <th className="px-4 py-2 text-right font-normal">actions</th>
                 <th className="px-4 py-2 text-right font-normal">added</th>
               </tr>
@@ -189,13 +189,13 @@ export function ImportPanel({
             <tbody>
               {[...groups.entries()].map(([itemName, rows]) =>
                 rows.map((d, i) => (
-                  <tr key={d.key} className="border-t border-neutral-800">
+                  <tr key={d.key} className="border-t border-neutral-800 hover:bg-neutral-800/60">
                     <td className="max-w-[220px] truncate px-4 py-2 text-neutral-200">
-                      {i === 0 ? itemName : <span className="text-neutral-700">···</span>}
+                      {i === 0 ? itemName : <span className="text-neutral-500">···</span>}
                     </td>
-                    <td className="px-2 py-2 text-neutral-400" title={d.notes || undefined}>
-                      {d.variant || <span className="text-neutral-600">—</span>}
-                      {d.notes ? <span className="ml-1 text-neutral-600">· {d.notes}</span> : null}
+                    <td className="px-2 py-2 text-neutral-300" title={d.notes || undefined}>
+                      {d.variant || <span className="text-neutral-500">—</span>}
+                      {d.notes ? <span className="ml-1 text-neutral-500">· {d.notes}</span> : null}
                     </td>
                     <td className="px-4 py-2 text-right">
                       <div className="flex justify-end gap-1">
@@ -203,27 +203,27 @@ export function ImportPanel({
                           href={d.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-400 hover:bg-neutral-800"
+                          className="rounded border border-neutral-700 px-2 py-0.5 text-xs text-neutral-300 hover:bg-neutral-700"
                         >
                           open
                         </a>
                         <button
                           onClick={() => void promote(d.key)}
                           disabled={atCap || busyKey === d.key}
-                          className="rounded border border-neutral-700 px-2 py-0.5 text-xs text-neutral-200 hover:bg-neutral-800 disabled:opacity-40"
+                          className="rounded border border-neutral-600 px-2 py-0.5 text-xs text-neutral-100 hover:bg-neutral-700 disabled:opacity-40"
                         >
                           promote
                         </button>
                         <button
                           onClick={() => void discard(d.key)}
                           disabled={busyKey === d.key}
-                          className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-500 hover:bg-neutral-800 hover:text-red-400 disabled:opacity-40"
+                          className="rounded border border-neutral-700 px-2 py-0.5 text-xs text-neutral-400 hover:bg-neutral-700 hover:text-red-400 disabled:opacity-40"
                         >
                           discard
                         </button>
                       </div>
                     </td>
-                    <td className="px-4 py-2 text-right text-xs text-neutral-600">{ago(d.addedAt)}</td>
+                    <td className="px-4 py-2 text-right text-xs text-neutral-500">{ago(d.addedAt)}</td>
                   </tr>
                 )),
               )}
