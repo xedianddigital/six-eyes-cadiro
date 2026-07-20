@@ -137,8 +137,8 @@ export default function Page() {
 
       {dash && dash.cards.length === 0 ? (
         <div className="mb-6 rounded-lg border border-dashed border-neutral-800 p-8 text-center text-sm text-neutral-500">
-          Paste a trade search URL above. Each search is polled every ~
-          {`${dash ? "" : ""}20`} minutes; cards fill in as history accumulates.
+          Paste a trade search URL above. Each search is polled every ~20 minutes; cards fill in as
+          history accumulates.
         </div>
       ) : null}
 

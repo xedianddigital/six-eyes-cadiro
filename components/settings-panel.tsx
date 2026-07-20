@@ -84,6 +84,7 @@ export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
       <div className={row}>
         <span className={label}>Poll interval (min, per search)</span>
         <input
+          key={settings.pollIntervalMin}
           className={input}
           type="number"
           min={10}
@@ -96,6 +97,7 @@ export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
       <div className={row}>
         <span className={label}>Result pages per poll (×10 listings)</span>
         <input
+          key={settings.fetchPages}
           className={input}
           type="number"
           min={1}
@@ -108,6 +110,7 @@ export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
       <div className={row}>
         <span className={label}>Discovery verifications / hour (0 = off)</span>
         <input
+          key={settings.discoveryPerHour}
           className={input}
           type="number"
           min={0}
@@ -120,6 +123,7 @@ export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
       <div className={row}>
         <span className={label}>Retention (days)</span>
         <input
+          key={settings.retentionDays}
           className={input}
           type="number"
           min={3}
@@ -141,6 +145,7 @@ export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
       <div className={row}>
         <span className={label}>Manual divine rate (chaos)</span>
         <input
+          key={settings.manualDivineRate}
           className={input}
           type="number"
           min={1}
@@ -152,6 +157,7 @@ export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
       <div className={row}>
         <span className={label}>Hold after SpeedyCadiro travel (sec, 0 = off)</span>
         <input
+          key={settings.coordinationHoldSec}
           className={input}
           type="number"
           min={0}
