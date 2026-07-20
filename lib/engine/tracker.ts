@@ -1,7 +1,7 @@
 // The tracker: one calm poll of one tracked search, and the read-side math
 // that turns stored observations into what a dashboard card shows.
 
-import type { Session, SearchStats, TrackedSearch } from "@/lib/poe/types"
+import type { Observation, Session, SearchStats, TrackedSearch } from "@/lib/poe/types"
 import { POLL_INTERVAL_MAX, POLL_INTERVAL_MIN } from "@/lib/poe/types"
 import { getDivine, getSettings, updateSearch } from "@/lib/poe/config"
 import { getSavedQuery, runSearch, sampleListings, tradeSearchUrl } from "@/lib/poe/poe-client"
@@ -13,6 +13,18 @@ import {
   snapshotsInWindow,
 } from "@/lib/store/observations"
 import { classifyTrend, quartiles } from "@/lib/stats"
+
+/**
+ * Chaos-equivalent of one observation, using the rate passed in — always the
+ * CURRENT divine rate at the call site, never a stored/historical one. An
+ * observation's `amount`+`currency` is the only fixed fact (see Observation's
+ * doc comment); every aggregate computed from a set of observations must use
+ * one single rate across all of them, or the result silently blends
+ * different historical rates into one number that means nothing.
+ */
+function chaosNow(o: Observation, divineRate: number): number {
+  return o.currency === "divine" ? o.amount * divineRate : o.amount
+}
 
 /**
  * Poll one tracked search:
@@ -66,7 +78,7 @@ export async function pollSearch(session: Session, search: TrackedSearch): Promi
     }
 
     const pages = Math.max(1, Math.min(settings.fetchPages, 3))
-    const seen: { listingId: string; chaos: number; amount: number; currency: "chaos" | "divine" }[] = []
+    const seen: { listingId: string; amount: number; currency: "chaos" | "divine" }[] = []
     let sampledPriced = 0
     for (let p = 0; p < pages; p += 1) {
       const ids = run.result.slice(p * 10, p * 10 + 10)
@@ -75,17 +87,19 @@ export async function pollSearch(session: Session, search: TrackedSearch): Promi
       for (const l of listings) {
         sampledPriced += 1
         if (!l.instantBuyout) continue
-        const chaos = l.currency === "divine" ? l.amount * divine.rate : l.amount
-        seen.push({ listingId: l.id, chaos, amount: l.amount, currency: l.currency })
+        seen.push({ listingId: l.id, amount: l.amount, currency: l.currency })
       }
     }
 
     await recordObservations(search.id, seen, now)
 
     // Snapshot the window state at poll time — this is what the graph draws.
+    // Every observation in the window is chaos-normalized using THIS poll's
+    // single current rate (`divine`, fetched once above), so one snapshot
+    // never blends multiple historical rates together.
     const windowMs = settings.windowHours * 3600_000
     const inWindow = await observationsInWindow(search.id, windowMs, now)
-    const q = quartiles(inWindow.map((o) => o.chaos))
+    const q = quartiles(inWindow.map((o) => chaosNow(o, divine.rate)))
     await recordSnapshot(search.id, {
       t: now,
       total: run.total,
@@ -107,8 +121,15 @@ export async function pollSearch(session: Session, search: TrackedSearch): Promi
 export async function statsFor(searchId: string, windowHours: number): Promise<SearchStats> {
   const windowMs = windowHours * 3600_000
   const now = Date.now()
+  const divine = await getDivine()
   const inWindow = await observationsInWindow(searchId, windowMs, now)
-  const prices = inWindow.map((o) => o.chaos)
+  // Every observation re-normalized against the SAME current rate on every
+  // read — never each observation's own stored history — so the median a
+  // card shows right now is always internally consistent, and a rate
+  // change (poe.ninja moving, or the user flipping Settings) can't blend
+  // old- and new-rate values into one meaningless number. See Observation's
+  // doc comment and chaosNow() above.
+  const prices = inWindow.map((o) => chaosNow(o, divine.rate))
   const median = quartiles(prices).p50
   const countBelowHalfMedian = median == null ? 0 : prices.filter((p) => p <= median * 0.5).length
   const countBelow75PctMedian = median == null ? 0 : prices.filter((p) => p <= median * 0.75).length

@@ -89,7 +89,7 @@ function appendLine(s: SeriesState, file: string, line: string): void {
  */
 export async function recordObservations(
   id: string,
-  seen: { listingId: string; chaos: number; amount: number; currency: "chaos" | "divine" }[],
+  seen: { listingId: string; amount: number; currency: "chaos" | "divine" }[],
   now = Date.now(),
 ): Promise<number> {
   const s = await ensureLoaded(id)
@@ -98,7 +98,6 @@ export async function recordObservations(
     const prev = s.observations.get(item.listingId)
     const obs: Observation = {
       id: item.listingId,
-      chaos: item.chaos,
       amount: item.amount,
       currency: item.currency,
       firstSeen: prev?.firstSeen ?? now,

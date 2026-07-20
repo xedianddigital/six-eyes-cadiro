@@ -39,13 +39,28 @@ export interface TrackedSearch {
   createdAt: number
 }
 
-/** One priced listing we observed, deduplicated by PoE listing id. */
+/**
+ * One priced listing we observed, deduplicated by PoE listing id.
+ *
+ * Deliberately does NOT store a chaos-normalized price. A seller who lists
+ * an item for "3 div" fixed 3 divine, not some chaos amount that happens to
+ * equal at the moment we saw it — the divine:chaos rate moves (poe.ninja's
+ * live rate, or the user's own manual override), and a listing's *native*
+ * amount+currency is the only fact that's actually fixed. Chaos-normalizing
+ * once and persisting the result (the original design, through 0.6.1) meant
+ * a window's median silently blended observations normalized at whatever
+ * rate happened to be live when each was last (re-)recorded — internally
+ * inconsistent the moment the rate moved during the window, and directly
+ * responsible for a divine-dominant item's price appearing to *triple* on
+ * a manual rate change even though no seller touched their listing.
+ * `chaosNow()` in tracker.ts derives the chaos-equivalent fresh, from
+ * amount+currency and the CURRENT rate, every time one is needed — never
+ * a stored, potentially-stale value.
+ */
 export interface Observation {
   /** PoE listing id. */
   id: string
-  /** Price normalised to chaos (divine listings converted at the stored rate). */
-  chaos: number
-  /** Original price as listed. */
+  /** Original price as listed — the fixed fact; never converted or altered. */
   amount: number
   currency: "chaos" | "divine"
   /** Unix ms this listing was first seen by us. */
