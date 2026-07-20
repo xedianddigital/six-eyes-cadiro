@@ -10,23 +10,26 @@
 // text rather than tooltip-only (was it 4 listings or 40? has the graph even
 // reached the configured window yet?).
 //
-// Layout is three columns sharing one row height (title+price stacked on the
-// left; span label above the sparkline in the middle; remove/pause/open
-// stacked on the right, flush to the border) so the sparkline gets the full
-// row height instead of being squeezed into a single text line next to
-// buttons.
+// Layout is three columns (title+price on the left; span label above the
+// sparkline in the middle; remove/pause/open stacked on the right, flush to
+// the border), vertically centered rather than stretched to share the row's
+// full height — three 24px buttons are the tallest column now, and
+// stretching the shorter ones to match just spread their own contents out
+// with awkward extra gaps (read as "room for a 4th button"). Centering
+// instead keeps title/price and the graph tight and leaves any leftover
+// height as quiet balanced space above/below, not inside them.
 
 import { useState } from "react"
 import { ago, chaosText, divineText, type CardModel } from "./api"
 import { Sparkline } from "./sparkline"
 
-// 22px, not the 24px used elsewhere (e.g. Import's row buttons) — three
-// stacked icon buttons at 24px plus gap-1 no longer fit this column without
-// either squeezing their padding or growing the card past what three of
-// them stacked should cost. 22px was the largest size that still fits
-// cleanly at three-wide with unsquished padding.
+// 24px, matching every other icon button in the app (e.g. Import's row
+// actions) — the owner asked for this back after 22px read as cramped, and
+// for the card to get shorter elsewhere instead: card padding and the
+// button-to-button gap are what actually shrank to compensate, not the
+// buttons themselves.
 const ICON_BUTTON =
-  "flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded border border-neutral-700 text-xs"
+  "flex h-6 w-6 shrink-0 items-center justify-center rounded border border-neutral-700 text-xs"
 
 const MEDIAN_TOOLTIP =
   "Median chaos-normalized ask price among the sampled cheapest instant-buyout listings in this window — not the whole market."
@@ -77,10 +80,10 @@ export function TrackedCard({
 
   return (
     <div
-      className={`rounded-lg border border-neutral-700 bg-[#1a1a1a] p-2 ${card.active ? "" : "opacity-50"}`}
+      className={`rounded-lg border border-neutral-700 bg-[#1a1a1a] p-1 ${card.active ? "" : "opacity-50"}`}
     >
-      <div className="flex items-stretch gap-2">
-        <div className="flex min-w-0 flex-1 flex-col justify-between">
+      <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           {editing ? (
             <input
               autoFocus
@@ -97,7 +100,7 @@ export function TrackedCard({
               className="w-full rounded border border-neutral-600 bg-neutral-800 px-1 py-0.5 text-sm font-medium text-neutral-100"
             />
           ) : (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 leading-tight">
               <a
                 href={card.url}
                 target="_blank"
@@ -142,7 +145,7 @@ export function TrackedCard({
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col items-center justify-between gap-0.5">
+        <div className="flex shrink-0 flex-col items-center gap-0.5">
           {s.series.length >= 2 ? (
             <span className="text-[9px] tabular-nums text-neutral-500" title={SPAN_TOOLTIP}>
               {spanLabel(s.spanHours, s.windowHours)}
@@ -151,7 +154,7 @@ export function TrackedCard({
           <Sparkline series={s.series} trend={s.trend} gapMarkers={s.gapMarkers} width={76} height={34} />
         </div>
 
-        <div className="flex shrink-0 flex-col items-end justify-between gap-1">
+        <div className="flex shrink-0 flex-col items-end gap-px">
           <button
             onClick={() => onRemove(card.id)}
             title="Remove"
@@ -178,7 +181,7 @@ export function TrackedCard({
         </div>
       </div>
 
-      <div className="mt-0.5 flex items-center justify-between text-[11px] tabular-nums pr-7">
+      <div className="mt-px flex items-center justify-between text-[11px] leading-tight tabular-nums pr-7">
         <span className="flex gap-2" title={MISPRICED_TOOLTIP}>
           <span className={s.countBelowHalfMedian > 0 ? "font-medium text-green-400" : "text-neutral-500"}>
             ≤50% {s.countBelowHalfMedian}
