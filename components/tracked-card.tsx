@@ -4,6 +4,7 @@
 // spread → volume → trend line. Everything else (pause, remove, open) stays
 // visually quiet.
 
+import { useState } from "react"
 import { ago, chaosText, type CardModel } from "./api"
 import { Sparkline } from "./sparkline"
 
@@ -18,14 +19,25 @@ export function TrackedCard({
   card,
   onPause,
   onRemove,
+  onRename,
 }: {
   card: CardModel
   onPause: (id: string, active: boolean) => void
   onRemove: (id: string) => void
+  onRename: (id: string, title: string) => void
 }) {
   const s = card.stats
   const trendColor =
     s.trend === "rising" ? "text-green-400" : s.trend === "falling" ? "text-red-400" : "text-neutral-400"
+  const [editing, setEditing] = useState(false)
+  const [draftTitle, setDraftTitle] = useState(card.title)
+
+  const commitRename = () => {
+    setEditing(false)
+    const trimmed = draftTitle.trim()
+    if (trimmed && trimmed !== card.title) onRename(card.id, trimmed)
+    else setDraftTitle(card.title)
+  }
 
   return (
     <div
@@ -33,15 +45,44 @@ export function TrackedCard({
     >
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <a
-            href={card.url}
-            target="_blank"
-            rel="noreferrer"
-            className="block truncate font-medium text-neutral-100 hover:underline"
-            title={card.url}
-          >
-            {card.title}
-          </a>
+          {editing ? (
+            <input
+              autoFocus
+              value={draftTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onBlur={commitRename}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitRename()
+                if (e.key === "Escape") {
+                  setDraftTitle(card.title)
+                  setEditing(false)
+                }
+              }}
+              className="w-full rounded border border-neutral-700 bg-neutral-900 px-1 py-0.5 text-sm font-medium text-neutral-100"
+            />
+          ) : (
+            <div className="flex items-center gap-1">
+              <a
+                href={card.url}
+                target="_blank"
+                rel="noreferrer"
+                className="block truncate font-medium text-neutral-100 hover:underline"
+                title={card.url}
+              >
+                {card.title}
+              </a>
+              <button
+                onClick={() => {
+                  setDraftTitle(card.title)
+                  setEditing(true)
+                }}
+                title="Rename"
+                className="shrink-0 text-neutral-700 hover:text-neutral-400"
+              >
+                ✎
+              </button>
+            </div>
+          )}
           <div className="text-xs text-neutral-500">
             {card.league} · polled {ago(card.lastPolledAt)}
           </div>

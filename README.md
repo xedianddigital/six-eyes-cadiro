@@ -49,11 +49,16 @@ SmartScreen will warn on first run because the binary isn't code-signed —
 2. **Set the league** — Settings → League (used for discovery and generated
    searches; tracked URLs carry their own league regardless).
 3. **Track searches** — build a search on the official trade site with the
-   filters that matter, copy the URL, paste it in. Up to 50.
+   filters that matter, copy the URL, paste it in (optionally with a name).
+   Up to 50. Rename any card later with its pencil icon.
 4. **Read the cards** — big number = median ask (chaos; divine listings
    normalized at the live rate). Green/red line = direction. Buy-below and
    stop-buying decisions come from the same glance.
-5. **Review discovery** — sorted by spread (median vs cheapest decile).
+5. **Import a batch** — the Import tab accepts a `.md` file or pasted text in
+   the format described in `docs/starter-picks.md`: an item name, then one or
+   more `- variant | url` lines under it. Parsed entries sit as drafts until
+   you promote one onto Tracked.
+6. **Review discovery** — sorted by spread (median vs cheapest decile).
    "Open" shows it on the trade site with your own eyes before you commit.
 
 ## Coordination with SpeedyCadiro

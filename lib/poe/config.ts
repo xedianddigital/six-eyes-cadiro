@@ -13,8 +13,20 @@ import {
   type Settings,
   type TrackedSearch,
   type DiscoveryCandidate,
+  type DraftSearch,
   DEFAULT_SETTINGS,
 } from "./types"
+import { parseDraftMarkdown } from "../import"
+import { parseTradeUrl } from "./parse-url"
+import { SEED_DRAFTS_MARKDOWN } from "./seed-drafts"
+
+/**
+ * Bump this whenever seed-drafts.ts's content changes and the new entries
+ * should merge into existing installs' Import tabs. Existing drafts are never
+ * touched — this only adds URLs that aren't already present as a draft or a
+ * tracked search.
+ */
+const SEED_DRAFTS_VERSION = 1
 
 // Packaged desktop builds install to a read-only directory, so Electron passes
 // a writable per-user path here. Falls back to ./.data for `pnpm dev`.
@@ -29,6 +41,8 @@ const EMPTY_CONFIG: AppConfig = {
   settings: DEFAULT_SETTINGS,
   discovery: { refreshedAt: 0, candidates: [] },
   divine: { rate: DEFAULT_SETTINGS.manualDivineRate, source: "manual", updatedAt: 0 },
+  drafts: [],
+  seedDraftsVersion: 0,
 }
 
 let cache: AppConfig | null = null
@@ -45,11 +59,44 @@ async function readConfig(): Promise<AppConfig> {
       settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
       discovery: parsed.discovery ?? { refreshedAt: 0, candidates: [] },
       divine: parsed.divine ?? structuredClone(EMPTY_CONFIG.divine),
+      drafts: parsed.drafts ?? [],
+      seedDraftsVersion: parsed.seedDraftsVersion ?? 0,
     }
   } catch {
     cache = structuredClone(EMPTY_CONFIG)
   }
+  if (cache.seedDraftsVersion < SEED_DRAFTS_VERSION) {
+    mergeDrafts(cache, parseDraftMarkdown(SEED_DRAFTS_MARKDOWN))
+    cache.seedDraftsVersion = SEED_DRAFTS_VERSION
+    await persist()
+  }
   return cache
+}
+
+/** Adds parsed entries as drafts, skipping URLs already drafted or tracked. */
+function mergeDrafts(
+  config: AppConfig,
+  entries: { itemName: string; variant: string; url: string }[],
+): number {
+  const known = new Set([...config.drafts.map((d) => d.url), ...config.searches.map((s) => s.url)])
+  let added = 0
+  for (const entry of entries) {
+    if (known.has(entry.url)) continue
+    const parsed = parseTradeUrl(entry.url)
+    if (!parsed) continue
+    known.add(entry.url)
+    config.drafts.push({
+      key: randomUUID(),
+      itemName: entry.itemName,
+      variant: entry.variant,
+      url: entry.url,
+      league: parsed.league,
+      searchId: parsed.searchId,
+      addedAt: Date.now(),
+    })
+    added += 1
+  }
+  return added
 }
 
 async function persist(): Promise<void> {
@@ -160,6 +207,30 @@ export async function updateCandidate(
   Object.assign(candidate, patch)
   await persist()
   return candidate
+}
+
+// ---- Import drafts ----
+
+export async function getDrafts(): Promise<DraftSearch[]> {
+  return (await readConfig()).drafts
+}
+
+/** Parse and merge a pasted/uploaded markdown draft list. Returns how many were new. */
+export async function importDraftsFromMarkdown(text: string): Promise<number> {
+  const config = await readConfig()
+  const added = mergeDrafts(config, parseDraftMarkdown(text))
+  if (added > 0) await persist()
+  return added
+}
+
+export async function getDraft(key: string): Promise<DraftSearch | null> {
+  return (await getDrafts()).find((d) => d.key === key) ?? null
+}
+
+export async function removeDraft(key: string): Promise<void> {
+  const config = await readConfig()
+  config.drafts = config.drafts.filter((d) => d.key !== key)
+  await persist()
 }
 
 // ---- Divine rate ----

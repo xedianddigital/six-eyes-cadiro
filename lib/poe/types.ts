@@ -168,6 +168,24 @@ export interface DiscoveryCandidate {
   dismissed: boolean
 }
 
+/**
+ * One search imported from a pasted markdown draft list, awaiting a manual
+ * "promote" before it counts against MAX_TRACKED. See lib/import.ts for the
+ * format and docs/starter-picks.md for the user-facing explanation.
+ */
+export interface DraftSearch {
+  /** Internal id, stable across re-imports of the same URL. */
+  key: string
+  /** The heading the entry was grouped under, e.g. "Watcher's Eye". */
+  itemName: string
+  /** Free-text label distinguishing variants of the same item. */
+  variant: string
+  url: string
+  league: string
+  searchId: string
+  addedAt: number
+}
+
 export interface AppConfig {
   session: Session | null
   searches: TrackedSearch[]
@@ -183,4 +201,7 @@ export interface AppConfig {
     source: "ninja" | "manual"
     updatedAt: number
   }
+  drafts: DraftSearch[]
+  /** Which starter-list seed (see seed-drafts.ts) has already been merged in. */
+  seedDraftsVersion: number
 }

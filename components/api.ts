@@ -51,6 +51,16 @@ export interface CandidateModel {
   }
 }
 
+export interface DraftModel {
+  key: string
+  itemName: string
+  variant: string
+  url: string
+  league: string
+  searchId: string
+  addedAt: number
+}
+
 export interface SettingsModel {
   league: string
   pollIntervalMin: number

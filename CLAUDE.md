@@ -18,15 +18,26 @@ deliberately separate apps with opposite temperaments:
   travels, never touches gameplay. It answers "what does this actually sell
   for, and which way is it moving?"
 
-Two features:
+Three tabs:
 
-1. **Tracker** — the user pastes official trade search URLs
+1. **Tracked** — the user pastes official trade search URLs
    (`https://www.pathofexile.com/trade/search/{league}/{id}`). Each is polled
    every ~20 min. Only **instant-buyout** listings priced in **chaos or
    divine** are recorded. Cards show ask-median (p50) with p25/p75, listing
    counts, new-listings/hour, and a p50 sparkline with trend over an
-   adjustable window (6/12/18/24/48h).
-2. **Discovery** — a curated universe of liquid uniques from poe.ninja's
+   adjustable window (6/12/18/24/48h). Title is user-renamable in place (the
+   pencil icon) — the auto-generated "League · id8chars" title is a fallback,
+   not the point.
+2. **Import** — paste/upload a loosely-structured markdown list (item name
+   heading, then `- variant | url` lines per item; format tolerant of mixed
+   `#`/`##`/bare headings — see `lib/import.ts` and `docs/starter-picks.md`).
+   Parsed entries sit as drafts until a manual "promote" turns one into a real
+   tracked search (subject to MAX_TRACKED); "discard" drops it unpromoted.
+   Re-uploading merges (dedup by URL against both drafts and already-tracked
+   searches) rather than replacing. `lib/poe/seed-drafts.ts` bundles the
+   owner's own starter list, merged in automatically on first load of any
+   version that bumps `SEED_DRAFTS_VERSION` in config.ts.
+3. **Discovery** — a curated universe of liquid uniques from poe.ninja's
    public API, verified a few per hour against live trade (name-only search,
    cheapest 20). Candidates whose cheap decile (p10) sits well below their own
    median (p50) are surfaced, sorted by that spread. All actions are manual:
@@ -67,7 +78,13 @@ electron/main.js        Electron shell (from SpeedyCadiro): forks Next standalon
 electron/preload.js     window.poeDesktop bridge (login, version, update, crash).
 lib/poe/types.ts        All shared types + settings defaults + bounds.
 lib/poe/config.ts       JSON config store (.data/config.json): session, searches,
-                        settings, discovery state, divine rate. Serialized writes.
+                        settings, discovery state, divine rate, drafts. Serialized
+                        writes. Seeds drafts from seed-drafts.ts once per
+                        SEED_DRAFTS_VERSION bump, merging (not replacing) on upgrade.
+lib/import.ts           parseDraftMarkdown: loose "# Item \n - variant | url" format,
+                        tolerant of #/##/bare headings. See docs/starter-picks.md.
+lib/poe/seed-drafts.ts  The owner's starter draft list, bundled as a TS string (not
+                        a docs/ file read at runtime — docs/ isn't packaged).
 lib/poe/rate-limit.ts   Header-driven limiter (retuned calm: 0.4 / 2000ms / 900ms).
 lib/poe/parse-url.ts    Trade URL -> {league, searchId}. Verbatim from SpeedyCadiro.
 lib/poe/jwt.ts          Whisper-token JWT decode; `tok:"hideout"` = instant buyout.
@@ -106,14 +123,17 @@ lib/ninja.ts            poe.ninja client, 10-min floor per URL. Divine rate +
                         unique universe (Weapon/Armour/Accessory/Jewel/Flask,
                         dedupe by name keeping most-listed line).
 app/api/…               session, settings, tracked (+[id], +[id]/history),
-                        discovery, status. Next 16 note: route ctx params are
-                        `Promise<{id}>` and must be awaited.
+                        discovery, drafts (+[key]: promote/discard), status.
+                        Next 16 note: route ctx params are `Promise<{id}>`/
+                        `Promise<{key}>` and must be awaited.
 components/…            api.ts (view models/fetch helpers), sparkline (dep-free
-                        SVG), tracked-card, discovery-panel, session-panel
-                        (desktop bridge login OR dev-mode manual cookie paste),
-                        settings-panel. UI polls local server every 60s; no SSE
-                        on purpose (data moves every ~20 min).
-app/page.tsx            Dashboard: add form, card grid, discovery, settings.
+                        SVG), tracked-card (inline-renamable title), discovery-panel,
+                        import-panel, session-panel (desktop bridge login OR
+                        dev-mode manual cookie paste), settings-panel. UI polls
+                        local server every 60s; no SSE on purpose (data moves
+                        every ~20 min).
+app/page.tsx            Dashboard: three tabs (Tracked/Import/Discovery), tab
+                        counts in the nav, add form with optional name field.
 scripts/                gen-build-info.mjs, prepare-standalone.mjs (verbatim from
                         SpeedyCadiro; the latter strips traced node_modules and
                         any stray .data before packaging).
@@ -145,8 +165,10 @@ MAX_TRACKED = 50.
 
 ## Current state
 
-v0.1.1 — bumped from the original v0.1.0 scaffold after the first live-run
-bug fixes below (no git tag yet, so no release has actually shipped).
+v0.2.0 — bumped from v0.1.1 after the owner's first real install/test
+produced feedback (2026-07-20): the Import tab, tab restructuring, and
+inline card rename are new since the initial scaffold, on top of the
+v0.1.1 live-run bug fixes below (still no git tag, no release has shipped).
 Repo is now live at github.com/xedianddigital/six-eyes-cadiro
 (git initialized, pushed, CI green on `master`). `pnpm typecheck` clean,
 `next build` clean. First live run completed 2026-07-20 against the owner's
