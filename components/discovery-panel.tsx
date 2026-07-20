@@ -19,7 +19,7 @@ export function DiscoveryPanel({
   onAction: (key: string, action: "track" | "dismiss") => void
 }) {
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900">
+    <div className="rounded-lg border border-neutral-700 bg-[#1a1a1a]">
       <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
         <div>
           <span className="font-medium text-neutral-100">Discovery</span>

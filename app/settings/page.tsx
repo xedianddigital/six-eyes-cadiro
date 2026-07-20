@@ -47,7 +47,7 @@ export default function SettingsPage() {
         </Link>
       </div>
 
-      <div className="mb-6 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+      <div className="mb-6 rounded-lg border border-neutral-700 bg-[#1a1a1a] p-4">
         <div className="mb-2 font-medium text-neutral-100">Account</div>
         {session?.configured ? (
           <div className="flex items-center justify-between">

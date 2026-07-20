@@ -43,7 +43,7 @@ export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
     "w-24 rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-right text-xs tabular-nums"
 
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+    <div className="rounded-lg border border-neutral-700 bg-[#1a1a1a] p-4">
       <div className="mb-2 font-medium text-neutral-100">Settings</div>
 
       <div className={row}>

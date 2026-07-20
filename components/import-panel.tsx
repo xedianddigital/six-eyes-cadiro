@@ -93,7 +93,7 @@ export function ImportPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+      <div className="rounded-lg border border-neutral-700 bg-[#1a1a1a] p-4">
         <div className="mb-2 font-medium text-neutral-100">Add one</div>
         <div className="flex flex-wrap gap-2">
           <input
@@ -128,7 +128,7 @@ export function ImportPanel({
         {addError ? <div className="mt-2 text-xs text-red-400">{addError}</div> : null}
       </div>
 
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900">
+      <div className="rounded-lg border border-neutral-700 bg-[#1a1a1a]">
         <div className="flex items-center justify-between gap-3 border-b border-neutral-800 px-4 py-3">
           <div>
             <span className="font-medium text-neutral-100">Import</span>

@@ -4,17 +4,13 @@
 // second screen with dozens of these visible at once with no scrolling, not
 // to be read one at a time. Reading order still mirrors the decision — name,
 // price, direction — just packed tighter than a single-card layout would be.
+// Height is a hard constraint here: every row costs cards-per-screen, so
+// listing count / new-per-hour moved into a tooltip instead of a fourth
+// visible line once three rows stopped being enough to fit the target grid.
 
 import { useState } from "react"
 import { ago, chaosText, type CardModel } from "./api"
 import { Sparkline } from "./sparkline"
-
-const trendLabel: Record<string, string> = {
-  rising: "rising",
-  falling: "falling",
-  stable: "stable",
-  unknown: "—",
-}
 
 const MEDIAN_TOOLTIP =
   "Median chaos-normalized ask price among the sampled cheapest instant-buyout listings in this window — not the whole market."
@@ -45,11 +41,13 @@ export function TrackedCard({
     else setDraftTitle(card.title)
   }
 
+  const metaTooltip = `${s.count} listings in window · ${s.newPerHour}/h new`
+
   return (
     <div
-      className={`rounded-lg border border-neutral-800 bg-neutral-900 p-3 ${card.active ? "" : "opacity-50"}`}
+      className={`rounded-lg border border-neutral-700 bg-[#1a1a1a] p-2 ${card.active ? "" : "opacity-50"}`}
     >
-      <div className="mb-1 flex items-start justify-between gap-2">
+      <div className="mb-0.5 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           {editing ? (
             <input
@@ -83,7 +81,7 @@ export function TrackedCard({
                   setEditing(true)
                 }}
                 title="Rename"
-                className="shrink-0 text-neutral-700 hover:text-neutral-400"
+                className="shrink-0 text-neutral-600 hover:text-neutral-300"
               >
                 ✎
               </button>
@@ -94,14 +92,14 @@ export function TrackedCard({
           <button
             onClick={() => onPause(card.id, !card.active)}
             title={card.active ? "Pause" : "Resume"}
-            className="rounded border border-neutral-800 px-1.5 py-0.5 text-xs text-neutral-400 hover:bg-neutral-800"
+            className="rounded border border-neutral-700 px-1.5 py-0.5 text-xs text-neutral-300 hover:bg-neutral-800"
           >
             {card.active ? "⏸" : "▶"}
           </button>
           <button
             onClick={() => onRemove(card.id)}
             title="Remove"
-            className="rounded border border-neutral-800 px-1.5 py-0.5 text-xs text-neutral-500 hover:bg-neutral-800 hover:text-red-400"
+            className="rounded border border-neutral-700 px-1.5 py-0.5 text-xs text-neutral-400 hover:bg-neutral-800 hover:text-red-400"
           >
             ✕
           </button>
@@ -110,33 +108,28 @@ export function TrackedCard({
 
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-baseline gap-1" title={MEDIAN_TOOLTIP}>
-          <span className="text-2xl font-semibold tabular-nums text-neutral-50">{chaosText(s.p50)}</span>
+          <span className="text-xl font-semibold tabular-nums text-neutral-50">{chaosText(s.p50)}</span>
           <span className="text-xs text-neutral-400">c median</span>
         </div>
-        <Sparkline series={s.series} trend={s.trend} width={72} height={24} />
+        <Sparkline series={s.series} trend={s.trend} width={64} height={20} />
       </div>
 
-      <div className="mt-0.5 flex items-center gap-3 text-[11px] tabular-nums" title={MISPRICED_TOOLTIP}>
-        <span className={s.countBelowHalfMedian > 0 ? "font-medium text-green-400" : "text-neutral-500"}>
-          ≤50% {s.countBelowHalfMedian}
+      <div className="mt-0.5 flex items-center justify-between text-[11px] tabular-nums">
+        <span className="flex gap-2" title={MISPRICED_TOOLTIP}>
+          <span className={s.countBelowHalfMedian > 0 ? "font-medium text-green-400" : "text-neutral-500"}>
+            ≤50% {s.countBelowHalfMedian}
+          </span>
+          <span className={s.countBelow75PctMedian > 0 ? "font-medium text-amber-400" : "text-neutral-500"}>
+            ≤75% {s.countBelow75PctMedian}
+          </span>
         </span>
-        <span className={s.countBelow75PctMedian > 0 ? "font-medium text-amber-400" : "text-neutral-500"}>
-          ≤75% {s.countBelow75PctMedian}
-        </span>
-      </div>
-
-      <div className={`mt-0.5 flex items-center justify-between text-[11px] tabular-nums ${trendColor}`}>
-        <span>
-          {trendLabel[s.trend]}
-          {s.trendPct != null ? ` ${s.trendPct > 0 ? "+" : ""}${s.trendPct}%` : ""}
-        </span>
-        <span className="text-neutral-400">
-          {s.count} listings · {s.newPerHour}/h new · polled {ago(card.lastPolledAt)}
+        <span className={trendColor} title={metaTooltip}>
+          {s.trendPct != null ? `${s.trendPct > 0 ? "+" : ""}${s.trendPct}%` : "—"} · {ago(card.lastPolledAt)}
         </span>
       </div>
 
       {card.lastError ? (
-        <div className="mt-1 truncate text-[11px] text-amber-500" title={card.lastError}>
+        <div className="mt-0.5 truncate text-[11px] text-amber-500" title={card.lastError}>
           {card.lastError}
         </div>
       ) : null}

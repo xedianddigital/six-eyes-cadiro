@@ -6,7 +6,6 @@
 // everything gets added through Import, promoted in on purpose, so nothing
 // here ever silently starts polling GGG.
 
-import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import { ago, getJson, sendJson, type CandidateModel, type DashboardModel, type DraftModel } from "@/components/api"
 import { TrackedCard } from "@/components/tracked-card"
@@ -99,11 +98,11 @@ export default function Page() {
     .join(" · ")
 
   return (
-    <main className="mx-auto max-w-[1920px] px-4 py-4">
+    <main className="mx-auto max-w-[1920px] px-4 py-3">
       {/* Title, tabs and account controls share one row on purpose — every
           row here is a row a 40-card grid doesn't get. Scheduler/divine
           status moves into the title's tooltip instead of its own line. */}
-      <header className="mb-4 flex items-center gap-4 border-b border-neutral-900 pb-3">
+      <header className="mb-3 flex items-center gap-4 border-b border-neutral-900 pb-3">
         <h1 title={statusTooltip} className="shrink-0 text-base font-semibold text-neutral-100">
           Six Eyes Cadiro
         </h1>
@@ -114,13 +113,6 @@ export default function Page() {
         </nav>
         <div className="ml-auto flex items-center gap-3">
           <SessionPanel onChanged={() => void refresh()} />
-          <Link
-            href="/settings"
-            title="Settings"
-            className="rounded border border-neutral-800 px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-900 hover:text-neutral-300"
-          >
-            ⚙
-          </Link>
         </div>
       </header>
 
