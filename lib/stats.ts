@@ -50,9 +50,3 @@ export function classifyTrend(series: [number, number][]): { trend: Trend; pct: 
   if (Math.abs(pct) < 3) return { trend: "stable", pct }
   return { trend: pct > 0 ? "rising" : "falling", pct }
 }
-
-/** Round chaos values for display: whole numbers above 10, one decimal below. */
-export function roundChaos(v: number | null): number | null {
-  if (v == null) return null
-  return v >= 10 ? Math.round(v) : Math.round(v * 10) / 10
-}

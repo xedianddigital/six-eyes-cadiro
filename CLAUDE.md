@@ -76,7 +76,8 @@ lib/poe/poe-client.ts   Paced GGG client: validateSession (/my-account redirect
                         sampleListings (fetch 10 ids -> price/currency/instant).
                         No whisper endpoint exists in this app.
 lib/stats.ts            percentile/quartiles, classifyTrend (first-third vs
-                        last-third medians; ±3% = stable), roundChaos.
+                        last-third medians; ±3% = stable). Display rounding
+                        lives client-side in components/api.ts's chaosText.
 lib/store/observations.ts  Append-only JSONL per tracked search:
                         .data/series/{id}.obs.jsonl  (observations, upsert-by-append,
                                                       deduped by listing id on load)
