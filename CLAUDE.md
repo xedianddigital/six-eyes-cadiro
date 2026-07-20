@@ -144,9 +144,9 @@ MAX_TRACKED = 50.
 
 ## Current state
 
-v0.1.0, iterated post-scaffold (no version bump yet — that's a release
-decision, left for the owner). Repo is now live at
-github.com/xedianddigital/six-eyes-cadiro
+v0.1.1 — bumped from the original v0.1.0 scaffold after the first live-run
+bug fixes below (no git tag yet, so no release has actually shipped).
+Repo is now live at github.com/xedianddigital/six-eyes-cadiro
 (git initialized, pushed, CI green on `master`). `pnpm typecheck` clean,
 `next build` clean. First live run completed 2026-07-20 against the owner's
 real account and the real current league (**"Mirage" is the actual live
