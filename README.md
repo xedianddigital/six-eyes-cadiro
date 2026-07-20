@@ -45,20 +45,23 @@ SmartScreen will warn on first run because the binary isn't code-signed —
 
 ## Using it
 
-1. **Sign in** — click *Sign in to pathofexile.com* and log in as usual.
-2. **Set the league** — Settings → League (used for discovery and generated
-   searches; tracked URLs carry their own league regardless).
-3. **Track searches** — build a search on the official trade site with the
-   filters that matter, copy the URL, paste it in (optionally with a name).
-   Up to 50. Rename any card later with its pencil icon.
+1. **Sign in** — click *Sign in to pathofexile.com* and log in as usual. Log
+   out any time from the header once signed in.
+2. **Set the league** — File → Settings (or the ⚙ in the header) → League
+   (used for discovery and generated searches; tracked URLs carry their own
+   league regardless).
+3. **Add searches, via Import** — build a search on the official trade site
+   with the filters that matter, copy the URL. On the Import tab, either add
+   one at a time (Name + optional Details + the URL) or upload/paste a `.md`
+   list (format in `docs/starter-picks.md`: an item name, then one or more
+   `- variant | url` lines under it). Either way it sits as a draft until you
+   click **promote** — that's what actually starts polling it, up to 50.
 4. **Read the cards** — big number = median ask (chaos; divine listings
-   normalized at the live rate). Green/red line = direction. Buy-below and
-   stop-buying decisions come from the same glance.
-5. **Import a batch** — the Import tab accepts a `.md` file or pasted text in
-   the format described in `docs/starter-picks.md`: an item name, then one or
-   more `- variant | url` lines under it. Parsed entries sit as drafts until
-   you promote one onto Tracked.
-6. **Review discovery** — sorted by spread (median vs cheapest decile).
+   normalized at the live rate). p75 next to it is the top of that same
+   sampled cheap end, not a market-wide figure — hover either for the exact
+   definition. Colored line = direction. Buy-below and stop-buying decisions
+   come from the same glance.
+5. **Review discovery** — sorted by spread (median vs cheapest decile).
    "Open" shows it on the trade site with your own eyes before you commit.
 
 ## Coordination with SpeedyCadiro

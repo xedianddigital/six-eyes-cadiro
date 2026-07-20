@@ -7,6 +7,7 @@ import type { SearchStats } from "@/lib/poe/types"
 export interface CardModel {
   id: string
   title: string
+  notes: string
   url: string
   league: string
   searchId: string
@@ -55,6 +56,7 @@ export interface DraftModel {
   key: string
   itemName: string
   variant: string
+  notes: string
   url: string
   league: string
   searchId: string

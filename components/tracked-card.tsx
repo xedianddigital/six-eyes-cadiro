@@ -1,8 +1,9 @@
 "use client"
 
-// One tracked search. Reading order mirrors the decision: name → median →
-// spread → volume → trend line. Everything else (pause, remove, open) stays
-// visually quiet.
+// One tracked search, kept deliberately compact: this is meant to run on a
+// second screen with dozens of these visible at once with no scrolling, not
+// to be read one at a time. Reading order still mirrors the decision — name,
+// price, direction — just packed tighter than a single-card layout would be.
 
 import { useState } from "react"
 import { ago, chaosText, type CardModel } from "./api"
@@ -14,6 +15,9 @@ const trendLabel: Record<string, string> = {
   stable: "stable",
   unknown: "—",
 }
+
+const PERCENTILE_TOOLTIP =
+  "Percentile of chaos-normalized ask price among the sampled cheapest instant-buyout listings in this window — not the whole market. p50 is the median of that sample; p75 is where the top of the sampled cheap end sits."
 
 export function TrackedCard({
   card,
@@ -41,10 +45,10 @@ export function TrackedCard({
 
   return (
     <div
-      className={`rounded-lg border border-neutral-800 bg-neutral-950 p-4 ${card.active ? "" : "opacity-50"}`}
+      className={`rounded-lg border border-neutral-800 bg-neutral-900 p-3 ${card.active ? "" : "opacity-50"}`}
     >
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <div className="min-w-0">
+      <div className="mb-1 flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
           {editing ? (
             <input
               autoFocus
@@ -58,7 +62,7 @@ export function TrackedCard({
                   setEditing(false)
                 }
               }}
-              className="w-full rounded border border-neutral-700 bg-neutral-900 px-1 py-0.5 text-sm font-medium text-neutral-100"
+              className="w-full rounded border border-neutral-600 bg-neutral-800 px-1 py-0.5 text-sm font-medium text-neutral-100"
             />
           ) : (
             <div className="flex items-center gap-1">
@@ -66,8 +70,8 @@ export function TrackedCard({
                 href={card.url}
                 target="_blank"
                 rel="noreferrer"
-                className="block truncate font-medium text-neutral-100 hover:underline"
-                title={card.url}
+                className="block truncate text-sm font-medium text-neutral-100 hover:underline"
+                title={card.notes ? `${card.url}\n\n${card.notes}` : card.url}
               >
                 {card.title}
               </a>
@@ -83,51 +87,48 @@ export function TrackedCard({
               </button>
             </div>
           )}
-          <div className="text-xs text-neutral-500">
-            {card.league} · polled {ago(card.lastPolledAt)}
-          </div>
         </div>
         <div className="flex shrink-0 gap-1">
           <button
             onClick={() => onPause(card.id, !card.active)}
-            className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-400 hover:bg-neutral-900"
+            title={card.active ? "Pause" : "Resume"}
+            className="rounded border border-neutral-800 px-1.5 py-0.5 text-xs text-neutral-400 hover:bg-neutral-800"
           >
-            {card.active ? "pause" : "resume"}
+            {card.active ? "⏸" : "▶"}
           </button>
           <button
             onClick={() => onRemove(card.id)}
-            className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-500 hover:bg-neutral-900 hover:text-red-400"
+            title="Remove"
+            className="rounded border border-neutral-800 px-1.5 py-0.5 text-xs text-neutral-500 hover:bg-neutral-800 hover:text-red-400"
           >
-            remove
+            ✕
           </button>
         </div>
       </div>
 
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <div className="text-3xl font-semibold tabular-nums text-neutral-50">
-            {chaosText(s.p50)}
-            <span className="ml-1 text-sm font-normal text-neutral-500">c median</span>
-          </div>
-          <div className="mt-1 text-xs tabular-nums text-neutral-400">
-            p25 {chaosText(s.p25)} · p75 {chaosText(s.p75)}
-          </div>
-          <div className="mt-1 text-xs tabular-nums text-neutral-500">
-            {s.count} listings / {s.windowHours}h
-            {s.lastTotal != null ? ` · ${s.lastTotal} live` : ""} · {s.newPerHour}/h new
-          </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-baseline gap-1.5" title={PERCENTILE_TOOLTIP}>
+          <span className="text-2xl font-semibold tabular-nums text-neutral-50">{chaosText(s.p50)}</span>
+          <span className="text-xs text-neutral-500">c</span>
+          {s.p75 != null ? (
+            <span className="text-xs tabular-nums text-neutral-500">/ {chaosText(s.p75)}c p75</span>
+          ) : null}
         </div>
-        <div className="text-right">
-          <Sparkline series={s.series} trend={s.trend} width={180} height={40} />
-          <div className={`mt-1 text-xs tabular-nums ${trendColor}`}>
-            {trendLabel[s.trend]}
-            {s.trendPct != null ? ` ${s.trendPct > 0 ? "+" : ""}${s.trendPct}%` : ""}
-          </div>
-        </div>
+        <Sparkline series={s.series} trend={s.trend} width={72} height={24} />
+      </div>
+
+      <div className={`mt-0.5 flex items-center justify-between text-[11px] tabular-nums ${trendColor}`}>
+        <span>
+          {trendLabel[s.trend]}
+          {s.trendPct != null ? ` ${s.trendPct > 0 ? "+" : ""}${s.trendPct}%` : ""}
+        </span>
+        <span className="text-neutral-600">
+          {s.count} listings · {s.newPerHour}/h new · polled {ago(card.lastPolledAt)}
+        </span>
       </div>
 
       {card.lastError ? (
-        <div className="mt-2 truncate text-xs text-amber-500" title={card.lastError}>
+        <div className="mt-1 truncate text-[11px] text-amber-500" title={card.lastError}>
           {card.lastError}
         </div>
       ) : null}

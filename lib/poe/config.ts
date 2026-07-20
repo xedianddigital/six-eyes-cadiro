@@ -18,15 +18,6 @@ import {
 } from "./types"
 import { parseDraftMarkdown } from "../import"
 import { parseTradeUrl } from "./parse-url"
-import { SEED_DRAFTS_MARKDOWN } from "./seed-drafts"
-
-/**
- * Bump this whenever seed-drafts.ts's content changes and the new entries
- * should merge into existing installs' Import tabs. Existing drafts are never
- * touched — this only adds URLs that aren't already present as a draft or a
- * tracked search.
- */
-const SEED_DRAFTS_VERSION = 1
 
 // Packaged desktop builds install to a read-only directory, so Electron passes
 // a writable per-user path here. Falls back to ./.data for `pnpm dev`.
@@ -42,7 +33,6 @@ const EMPTY_CONFIG: AppConfig = {
   discovery: { refreshedAt: 0, candidates: [] },
   divine: { rate: DEFAULT_SETTINGS.manualDivineRate, source: "manual", updatedAt: 0 },
   drafts: [],
-  seedDraftsVersion: 0,
 }
 
 let cache: AppConfig | null = null
@@ -60,23 +50,23 @@ async function readConfig(): Promise<AppConfig> {
       discovery: parsed.discovery ?? { refreshedAt: 0, candidates: [] },
       divine: parsed.divine ?? structuredClone(EMPTY_CONFIG.divine),
       drafts: parsed.drafts ?? [],
-      seedDraftsVersion: parsed.seedDraftsVersion ?? 0,
     }
   } catch {
     cache = structuredClone(EMPTY_CONFIG)
   }
-  if (cache.seedDraftsVersion < SEED_DRAFTS_VERSION) {
-    mergeDrafts(cache, parseDraftMarkdown(SEED_DRAFTS_MARKDOWN))
-    cache.seedDraftsVersion = SEED_DRAFTS_VERSION
-    await persist()
-  }
   return cache
 }
 
-/** Adds parsed entries as drafts, skipping URLs already drafted or tracked. */
+/**
+ * Adds parsed entries as drafts, skipping URLs already drafted or tracked.
+ * No entries ship pre-seeded — anything in the Import tab is either uploaded
+ * by the user or added one at a time (see addSingleDraft), never bundled
+ * with the app itself; this is public/open-source and the owner's own picks
+ * aren't everyone's.
+ */
 function mergeDrafts(
   config: AppConfig,
-  entries: { itemName: string; variant: string; url: string }[],
+  entries: { itemName: string; variant: string; notes: string; url: string }[],
 ): number {
   const known = new Set([...config.drafts.map((d) => d.url), ...config.searches.map((s) => s.url)])
   let added = 0
@@ -89,6 +79,7 @@ function mergeDrafts(
       key: randomUUID(),
       itemName: entry.itemName,
       variant: entry.variant,
+      notes: entry.notes,
       url: entry.url,
       league: parsed.league,
       searchId: parsed.searchId,
@@ -223,8 +214,41 @@ export async function importDraftsFromMarkdown(text: string): Promise<number> {
   return added
 }
 
+/** Add one manually-entered draft (the Import tab's "add single item" form). */
+export async function addSingleDraft(input: {
+  itemName: string
+  notes: string
+  url: string
+}): Promise<{ ok: true; draft: DraftSearch } | { ok: false; error: string }> {
+  const parsed = parseTradeUrl(input.url)
+  if (!parsed) return { ok: false, error: "Not a trade search URL. Expected …/trade/search/{league}/{id}." }
+  const config = await readConfig()
+  const known = new Set([...config.drafts.map((d) => d.url), ...config.searches.map((s) => s.url)])
+  if (known.has(input.url.trim())) return { ok: false, error: "Already tracked or drafted." }
+  const draft: DraftSearch = {
+    key: randomUUID(),
+    itemName: input.itemName.trim(),
+    variant: "",
+    notes: input.notes.trim(),
+    url: input.url.trim(),
+    league: parsed.league,
+    searchId: parsed.searchId,
+    addedAt: Date.now(),
+  }
+  config.drafts.push(draft)
+  await persist()
+  return { ok: true, draft }
+}
+
 export async function getDraft(key: string): Promise<DraftSearch | null> {
   return (await getDrafts()).find((d) => d.key === key) ?? null
+}
+
+/** Discard every current draft in one action. */
+export async function clearDrafts(): Promise<void> {
+  const config = await readConfig()
+  config.drafts = []
+  await persist()
 }
 
 export async function removeDraft(key: string): Promise<void> {

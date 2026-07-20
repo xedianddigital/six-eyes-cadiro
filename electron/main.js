@@ -379,6 +379,12 @@ function buildMenu() {
     {
       label: 'File',
       submenu: [
+        {
+          label: 'Settings',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => mainWindow?.webContents.send('poe:open-settings'),
+        },
+        { type: 'separator' },
         { role: 'quit' },
       ],
     },

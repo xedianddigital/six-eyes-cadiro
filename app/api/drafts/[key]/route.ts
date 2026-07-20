@@ -28,6 +28,7 @@ export async function POST(
     title: draft.variant && draft.variant.toLowerCase() !== "any"
       ? `${draft.itemName} · ${draft.variant}`
       : draft.itemName,
+    notes: draft.notes,
     active: true,
     cachedQuery: null,
     lastPolledAt: 0,

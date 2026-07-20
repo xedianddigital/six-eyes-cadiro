@@ -8,6 +8,9 @@ import { getJson, sendJson, type SettingsModel } from "./api"
 
 const WINDOWS = [6, 12, 18, 24, 48]
 
+const RATE_LIMIT_NOTE =
+  "Lower values don't increase how fast requests actually go out — that's governed separately, by reading GGG's real published rate-limit headers on every response and staying under 40% of budget with a 2-second floor, unconditionally. Lower here just means searches queue up more eagerly; if you had enough of them to strain the real budget, spacing widens automatically to compensate."
+
 export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
   const [settings, setSettings] = useState<SettingsModel | null>(null)
   const [saving, setSaving] = useState(false)
@@ -37,24 +40,24 @@ export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
   const row = "flex items-center justify-between gap-3 py-1.5"
   const label = "text-xs text-neutral-400"
   const input =
-    "w-24 rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-right text-xs tabular-nums"
+    "w-24 rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-right text-xs tabular-nums"
 
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-950 p-4">
+    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="mb-2 font-medium text-neutral-100">Settings</div>
 
       <div className={row}>
         <span className={label}>League (discovery + new searches)</span>
         <span className="flex gap-1">
           <input
-            className="w-32 rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-xs"
+            className="w-32 rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs"
             value={leagueDraft}
             onChange={(e) => setLeagueDraft(e.target.value)}
           />
           {leagueDraft !== settings.league ? (
             <button
               onClick={() => void patch({ league: leagueDraft })}
-              className="rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900"
+              className="rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-800"
             >
               save
             </button>
@@ -72,7 +75,7 @@ export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
               className={`rounded border px-2 py-1 text-xs tabular-nums ${
                 settings.windowHours === h
                   ? "border-neutral-500 bg-neutral-800 text-neutral-100"
-                  : "border-neutral-800 text-neutral-400 hover:bg-neutral-900"
+                  : "border-neutral-700 text-neutral-400 hover:bg-neutral-800"
               }`}
             >
               {h}h
@@ -82,7 +85,9 @@ export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
       </div>
 
       <div className={row}>
-        <span className={label}>Poll interval (min, per search)</span>
+        <span className={label} title={RATE_LIMIT_NOTE}>
+          Poll interval (min, per search) ⓘ
+        </span>
         <input
           key={settings.pollIntervalMin}
           className={input}
@@ -95,7 +100,9 @@ export function SettingsPanel({ onChanged }: { onChanged: () => void }) {
       </div>
 
       <div className={row}>
-        <span className={label}>Result pages per poll (×10 listings)</span>
+        <span className={label} title={RATE_LIMIT_NOTE}>
+          Result pages per poll (×10 listings) ⓘ
+        </span>
         <input
           key={settings.fetchPages}
           className={input}

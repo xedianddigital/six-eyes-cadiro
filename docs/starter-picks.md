@@ -26,6 +26,7 @@ out of actual use, not designed up front:
 Uploading the same file twice (or one with overlapping entries) is safe —
 duplicate URLs are skipped, existing drafts aren't touched.
 
-The parser itself lives in `lib/import.ts`; the app's own starter list
-(seeded into the Import tab automatically) is `lib/poe/seed-drafts.ts`,
-built from this exact format.
+Nothing is pre-seeded into a fresh install — this is public/open-source and
+the owner's own picks aren't everyone's. The parser lives in `lib/import.ts`;
+the owner's own list, in this exact format, lives in `my-drafts.md` at the
+repo root, for manual upload only (never read automatically).

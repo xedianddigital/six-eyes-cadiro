@@ -3,6 +3,11 @@
 // Session state and sign-in. Inside the desktop shell the login runs through
 // the Electron bridge exactly as in SpeedyCadiro; in plain `pnpm dev` there is
 // no bridge, so a manual cookie paste is offered instead.
+//
+// Deliberately quiet when everything's fine: a "session ok" success message
+// sitting in the header forever added nothing actionable. Signed in shows
+// only a Log out button (account details live on the Settings page); signed
+// out is the only state that needs your attention here.
 
 import { useEffect, useState } from "react"
 import { getJson, sendJson } from "./api"
@@ -12,16 +17,6 @@ interface SessionInfo {
   valid?: boolean
   reason?: string
   account?: string
-}
-
-declare global {
-  interface Window {
-    poeDesktop?: {
-      isDesktop: boolean
-      login: () => Promise<{ ok: boolean; valid: boolean; reason?: string }>
-      version: () => Promise<string>
-    }
-  }
 }
 
 export function SessionPanel({ onChanged }: { onChanged: () => void }) {
@@ -79,11 +74,28 @@ export function SessionPanel({ onChanged }: { onChanged: () => void }) {
     }
   }
 
+  const logOut = async () => {
+    if (!confirm("Log out? You'll need to sign in again before polling can resume.")) return
+    setBusy(true)
+    try {
+      await sendJson("/api/session", "DELETE")
+      await refresh()
+      onChanged()
+    } finally {
+      setBusy(false)
+    }
+  }
+
   if (info?.configured && info.valid) {
     return (
-      <span className="text-xs text-neutral-500">
-        session ok{info.account ? ` · ${info.account}` : ""}
-      </span>
+      <button
+        onClick={() => void logOut()}
+        disabled={busy}
+        title={info.account ? `Signed in as ${info.account}` : "Signed in"}
+        className="rounded border border-neutral-800 px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-800 disabled:opacity-50"
+      >
+        Log out
+      </button>
     )
   }
 
@@ -96,38 +108,38 @@ export function SessionPanel({ onChanged }: { onChanged: () => void }) {
         <button
           onClick={loginDesktop}
           disabled={busy}
-          className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-900 disabled:opacity-50"
+          className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800 disabled:opacity-50"
         >
           {busy ? "signing in…" : "Sign in to pathofexile.com"}
         </button>
       ) : (
         <button
           onClick={() => setManualOpen((v) => !v)}
-          className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-900"
+          className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800"
         >
           paste session
         </button>
       )}
       {message ? <span className="text-xs text-neutral-500">{message}</span> : null}
       {manualOpen ? (
-        <div className="absolute right-4 top-14 z-10 w-96 rounded-lg border border-neutral-800 bg-neutral-950 p-4 shadow-xl">
+        <div className="absolute right-4 top-14 z-10 w-96 rounded-lg border border-neutral-800 bg-neutral-900 p-4 shadow-xl">
           <div className="mb-2 text-xs text-neutral-400">
             Dev-mode only: paste cookies from a logged-in browser tab on pathofexile.com.
           </div>
           <input
-            className="mb-2 w-full rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-xs"
+            className="mb-2 w-full rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs"
             placeholder="POESESSID"
             value={poesessid}
             onChange={(e) => setPoesessid(e.target.value)}
           />
           <input
-            className="mb-2 w-full rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-xs"
+            className="mb-2 w-full rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs"
             placeholder="cf_clearance (optional)"
             value={cfClearance}
             onChange={(e) => setCfClearance(e.target.value)}
           />
           <input
-            className="mb-2 w-full rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-xs"
+            className="mb-2 w-full rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs"
             placeholder="Browser User-Agent"
             value={userAgent}
             onChange={(e) => setUserAgent(e.target.value)}
@@ -135,7 +147,7 @@ export function SessionPanel({ onChanged }: { onChanged: () => void }) {
           <button
             onClick={saveManual}
             disabled={busy || !poesessid}
-            className="rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-900 disabled:opacity-50"
+            className="rounded border border-neutral-700 px-2 py-1 text-xs hover:bg-neutral-800 disabled:opacity-50"
           >
             Save
           </button>

@@ -1,11 +1,3 @@
-// The starter draft list, seeded into the Import tab on first run of any
-// version that bumps SEED_DRAFTS_VERSION (see config.ts). Same format
-// documented in docs/starter-picks.md — this is a bundled TS string rather
-// than a file read at runtime because docs/ isn't part of the packaged
-// Electron build (electron-builder.yml's `files` list doesn't include it),
-// while this .ts file compiles into the server bundle like anything else.
-
-export const SEED_DRAFTS_MARKDOWN = `
 # Mindspiral
 - any           | https://www.pathofexile.com/trade/search/Mirage/eRE4Jo7giL
 - good roll     | https://www.pathofexile.com/trade/search/Mirage/QLB4VwjeSw
@@ -77,4 +69,3 @@ Cobalt Jewel
 - 15% crit multi    | https://www.pathofexile.com/trade/search/Mirage/YpoEORQvcY
 Helical Ring
 - ilvl 70-75        | https://www.pathofexile.com/trade/search/Mirage/4meoWOMZs9
-`

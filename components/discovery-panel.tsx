@@ -19,7 +19,7 @@ export function DiscoveryPanel({
   onAction: (key: string, action: "track" | "dismiss") => void
 }) {
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-950">
+    <div className="rounded-lg border border-neutral-800 bg-neutral-900">
       <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
         <div>
           <span className="font-medium text-neutral-100">Discovery</span>
@@ -52,7 +52,7 @@ export function DiscoveryPanel({
               const v = c.verified
               const hot = v?.spreadPct != null && v.spreadPct >= 10
               return (
-                <tr key={c.key} className="border-t border-neutral-900">
+                <tr key={c.key} className="border-t border-neutral-800">
                   <td className="max-w-[220px] truncate px-4 py-2 text-neutral-200">{c.name}</td>
                   <td className="px-2 py-2 text-right tabular-nums text-neutral-400">{c.ninjaChaos}c</td>
                   <td className="px-2 py-2 text-right tabular-nums text-neutral-300">
@@ -76,7 +76,7 @@ export function DiscoveryPanel({
                           href={v.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-400 hover:bg-neutral-900"
+                          className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-400 hover:bg-neutral-800"
                         >
                           open
                         </a>
@@ -84,13 +84,13 @@ export function DiscoveryPanel({
                       <button
                         onClick={() => onAction(c.key, "track")}
                         disabled={!v?.url}
-                        className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-300 hover:bg-neutral-900 disabled:opacity-40"
+                        className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-300 hover:bg-neutral-800 disabled:opacity-40"
                       >
                         track
                       </button>
                       <button
                         onClick={() => onAction(c.key, "dismiss")}
-                        className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-500 hover:bg-neutral-900"
+                        className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-500 hover:bg-neutral-800"
                       >
                         dismiss
                       </button>

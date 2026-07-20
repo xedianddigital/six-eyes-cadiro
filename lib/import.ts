@@ -17,6 +17,8 @@
 export interface ParsedDraftEntry {
   itemName: string
   variant: string
+  /** The markdown format has no notes concept — always empty for parsed entries. */
+  notes: string
   url: string
 }
 
@@ -35,7 +37,7 @@ export function parseDraftMarkdown(text: string): ParsedDraftEntry[] {
     if (entry) {
       const [, variant, url] = entry
       if (itemName && /^https?:\/\//i.test(url)) {
-        out.push({ itemName, variant: variant.trim(), url })
+        out.push({ itemName, variant: variant.trim(), notes: "", url })
       }
       continue
     }

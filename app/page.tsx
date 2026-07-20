@@ -2,22 +2,17 @@
 
 // The dashboard. Local server is the only thing this page talks to; it
 // re-reads once a minute, which is generous for data that moves every 15–20
-// minutes, and immediately after any user action.
+// minutes, and immediately after any user action. Tracked is display-only —
+// everything gets added through Import, promoted in on purpose, so nothing
+// here ever silently starts polling GGG.
 
+import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
-import {
-  ago,
-  getJson,
-  sendJson,
-  type CandidateModel,
-  type DashboardModel,
-  type DraftModel,
-} from "@/components/api"
+import { ago, getJson, sendJson, type CandidateModel, type DashboardModel, type DraftModel } from "@/components/api"
 import { TrackedCard } from "@/components/tracked-card"
 import { DiscoveryPanel } from "@/components/discovery-panel"
 import { ImportPanel } from "@/components/import-panel"
 import { SessionPanel } from "@/components/session-panel"
-import { SettingsPanel } from "@/components/settings-panel"
 
 interface DiscoveryModel {
   refreshedAt: number
@@ -32,10 +27,6 @@ export default function Page() {
   const [dash, setDash] = useState<DashboardModel | null>(null)
   const [discovery, setDiscovery] = useState<DiscoveryModel | null>(null)
   const [drafts, setDrafts] = useState<DraftModel[]>([])
-  const [url, setUrl] = useState("")
-  const [name, setName] = useState("")
-  const [addError, setAddError] = useState<string | null>(null)
-  const [showSettings, setShowSettings] = useState(false)
 
   const refresh = useCallback(async () => {
     try {
@@ -57,18 +48,6 @@ export default function Page() {
     const timer = setInterval(() => void refresh(), 60_000)
     return () => clearInterval(timer)
   }, [refresh])
-
-  const addSearch = async () => {
-    setAddError(null)
-    try {
-      await sendJson("/api/tracked", "POST", { url, title: name.trim() || undefined })
-      setUrl("")
-      setName("")
-      await refresh()
-    } catch (err) {
-      setAddError((err as Error).message)
-    }
-  }
 
   const pause = async (id: string, active: boolean) => {
     await sendJson(`/api/tracked/${id}`, "PATCH", { active })
@@ -112,7 +91,7 @@ export default function Page() {
   )
 
   return (
-    <main className="mx-auto max-w-[1600px] px-4 py-6">
+    <main className="mx-auto max-w-[1920px] px-4 py-6">
       <header className="relative mb-4 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-lg font-semibold text-neutral-100">SixEyesCadiro</h1>
@@ -124,20 +103,15 @@ export default function Page() {
         </div>
         <div className="flex items-center gap-3">
           <SessionPanel onChanged={() => void refresh()} />
-          <button
-            onClick={() => setShowSettings((v) => !v)}
-            className="rounded border border-neutral-800 px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-900"
+          <Link
+            href="/settings"
+            title="Settings"
+            className="rounded border border-neutral-800 px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-900 hover:text-neutral-300"
           >
-            settings
-          </button>
+            ⚙
+          </Link>
         </div>
       </header>
-
-      {showSettings ? (
-        <div className="mb-6 max-w-xl">
-          <SettingsPanel onChanged={() => void refresh()} />
-        </div>
-      ) : null}
 
       <nav className="mb-6 flex gap-1 border-b border-neutral-900 pb-3">
         {tabButton("tracked", "Tracked", dash?.cards.length)}
@@ -146,54 +120,18 @@ export default function Page() {
       </nav>
 
       {tab === "tracked" ? (
-        <>
-          <div className="mb-6 flex gap-2">
-            <input
-              className="w-48 rounded border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm placeholder:text-neutral-600"
-              placeholder="name (optional)"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void addSearch()
-              }}
-            />
-            <input
-              className="flex-1 rounded border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm placeholder:text-neutral-600"
-              placeholder="https://www.pathofexile.com/trade/search/Mirage/…"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void addSearch()
-              }}
-            />
-            <button
-              onClick={() => void addSearch()}
-              disabled={!url.trim()}
-              className="rounded border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-900 disabled:opacity-40"
-            >
-              Track
-            </button>
+        dash && dash.cards.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-neutral-800 p-8 text-center text-sm text-neutral-500">
+            Nothing tracked yet — add or promote something from the Import tab. Each search is polled
+            every ~20 minutes; cards fill in as history accumulates.
           </div>
-          {addError ? <div className="-mt-4 mb-4 text-xs text-red-400">{addError}</div> : null}
-          {dash && dash.cards.length >= dash.maxTracked ? (
-            <div className="-mt-4 mb-4 text-xs text-amber-500">
-              At the {dash.maxTracked}-search cap — remove something before adding more.
-            </div>
-          ) : null}
-
-          {dash && dash.cards.length === 0 ? (
-            <div className="mb-6 rounded-lg border border-dashed border-neutral-800 p-8 text-center text-sm text-neutral-500">
-              Paste a trade search URL above, or promote something from the Import tab. Each search is
-              polled every ~20 minutes; cards fill in as history accumulates.
-            </div>
-          ) : null}
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        ) : (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[1920px]:grid-cols-6">
             {dash?.cards.map((card) => (
               <TrackedCard key={card.id} card={card} onPause={pause} onRemove={remove} onRename={rename} />
             ))}
           </div>
-        </>
+        )
       ) : null}
 
       {tab === "import" ? (

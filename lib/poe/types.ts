@@ -23,6 +23,8 @@ export interface TrackedSearch {
   searchId: string
   /** Human label. Defaults to league + short id until the first poll names it. */
   title: string
+  /** Free-text comment, e.g. "specific roll" — shown in the title tooltip. */
+  notes: string
   /** Paused searches stay on the dashboard but are never polled. */
   active: boolean
   /**
@@ -178,8 +180,10 @@ export interface DraftSearch {
   key: string
   /** The heading the entry was grouped under, e.g. "Watcher's Eye". */
   itemName: string
-  /** Free-text label distinguishing variants of the same item. */
+  /** Free-text label distinguishing variants of the same item. Empty for a manually-added single entry. */
   variant: string
+  /** Free-text comment, carried onto the tracked search when promoted. */
+  notes: string
   url: string
   league: string
   searchId: string
@@ -202,6 +206,4 @@ export interface AppConfig {
     updatedAt: number
   }
   drafts: DraftSearch[]
-  /** Which starter-list seed (see seed-drafts.ts) has already been merged in. */
-  seedDraftsVersion: number
 }

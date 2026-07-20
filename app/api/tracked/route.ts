@@ -1,4 +1,6 @@
-// The dashboard's main read and the "paste a URL" write.
+// The dashboard's main read, and the underlying "create a tracked search"
+// primitive (used by draft promotion and discovery's track action — the
+// dashboard UI itself only ever adds through the Import tab now).
 
 import { addSearch, getDivine, getSearches, getSettings } from "@/lib/poe/config"
 import { parseTradeUrl } from "@/lib/poe/parse-url"
@@ -15,6 +17,7 @@ export async function GET(): Promise<Response> {
     searches.map(async (s) => ({
       id: s.id,
       title: s.title,
+      notes: s.notes,
       url: s.url,
       league: s.league,
       searchId: s.searchId,
@@ -34,7 +37,7 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(req: Request): Promise<Response> {
-  let body: { url?: string; title?: string }
+  let body: { url?: string; title?: string; notes?: string }
   try {
     body = await req.json()
   } catch {
@@ -62,6 +65,7 @@ export async function POST(req: Request): Promise<Response> {
     league: parsed.league,
     searchId: parsed.searchId,
     title: body.title?.trim() || `${parsed.league} · ${parsed.searchId.slice(0, 8)}`,
+    notes: body.notes?.trim() ?? "",
     active: true,
     cachedQuery: null,
     lastPolledAt: 0,

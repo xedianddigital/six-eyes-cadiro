@@ -52,6 +52,7 @@ export async function POST(req: Request): Promise<Response> {
     league: parsed.league,
     searchId: parsed.searchId,
     title: candidate.name,
+    notes: "",
     active: true,
     cachedQuery: null,
     lastPolledAt: 0,

@@ -31,4 +31,11 @@ contextBridge.exposeInMainWorld('poeDesktop', {
    * Resolves to { ok, valid, reason?, found? }.
    */
   login: () => ipcRenderer.invoke('poe:login'),
+
+  /** File -> Settings was clicked; returns an unsubscribe function. */
+  onOpenSettings: (cb) => {
+    const listener = () => cb()
+    ipcRenderer.on('poe:open-settings', listener)
+    return () => ipcRenderer.removeListener('poe:open-settings', listener)
+  },
 })

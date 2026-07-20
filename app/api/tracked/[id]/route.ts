@@ -11,14 +11,15 @@ export async function PATCH(
   ctx: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   const { id } = await ctx.params
-  let body: { title?: string; active?: boolean }
+  let body: { title?: string; notes?: string; active?: boolean }
   try {
     body = await req.json()
   } catch {
     return Response.json({ ok: false, error: "Invalid JSON body." }, { status: 400 })
   }
-  const patch: { title?: string; active?: boolean } = {}
+  const patch: { title?: string; notes?: string; active?: boolean } = {}
   if (typeof body.title === "string" && body.title.trim()) patch.title = body.title.trim()
+  if (typeof body.notes === "string") patch.notes = body.notes.trim()
   if (typeof body.active === "boolean") patch.active = body.active
   const search = await updateSearch(id, patch)
   if (!search) return Response.json({ ok: false, error: "Unknown search." }, { status: 404 })

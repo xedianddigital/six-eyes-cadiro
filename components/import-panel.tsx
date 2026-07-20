@@ -1,8 +1,9 @@
 "use client"
 
-// The Import tab: upload a markdown draft list (see docs/starter-picks.md
-// for the format), review what got parsed, promote one at a time onto the
-// Tracked tab. Nothing here touches GGG — this is pure local bookkeeping.
+// The Import tab: the only way anything gets onto Tracked now, whether one
+// at a time (the form below) or in bulk (a markdown file — see
+// docs/starter-picks.md for the format). Everything sits as a draft until a
+// manual "promote", so nothing you add here silently starts polling GGG.
 
 import { useRef, useState } from "react"
 import { ago, sendJson, type DraftModel } from "./api"
@@ -21,7 +22,24 @@ export function ImportPanel({
   const fileInput = useRef<HTMLInputElement>(null)
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [itemName, setItemName] = useState("")
+  const [notes, setNotes] = useState("")
+  const [url, setUrl] = useState("")
+  const [addError, setAddError] = useState<string | null>(null)
   const atCap = trackedCount >= maxTracked
+
+  const addOne = async () => {
+    setAddError(null)
+    try {
+      await sendJson("/api/drafts", "POST", { itemName, notes, url })
+      setItemName("")
+      setNotes("")
+      setUrl("")
+      onChanged()
+    } catch (err) {
+      setAddError((err as Error).message)
+    }
+  }
 
   const upload = async (file: File) => {
     setMessage(null)
@@ -60,6 +78,12 @@ export function ImportPanel({
     }
   }
 
+  const clearAll = async () => {
+    if (!confirm(`Discard all ${drafts.length} draft${drafts.length === 1 ? "" : "s"}? This can't be undone.`)) return
+    await sendJson("/api/drafts", "DELETE")
+    onChanged()
+  }
+
   const groups = new Map<string, DraftModel[]>()
   for (const d of drafts) {
     const list = groups.get(d.itemName) ?? []
@@ -68,97 +92,145 @@ export function ImportPanel({
   }
 
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-950">
-      <div className="flex items-center justify-between gap-3 border-b border-neutral-800 px-4 py-3">
-        <div>
-          <span className="font-medium text-neutral-100">Import</span>
-          <span className="ml-2 text-xs text-neutral-500">
-            {drafts.length} draft{drafts.length === 1 ? "" : "s"} waiting · upload a .md list to add more
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-4">
+      <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+        <div className="mb-2 font-medium text-neutral-100">Add one</div>
+        <div className="flex flex-wrap gap-2">
           <input
-            ref={fileInput}
-            type="file"
-            accept=".md,.txt,text/markdown,text/plain"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) void upload(file)
+            className="w-64 rounded border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm placeholder:text-neutral-600"
+            placeholder="Name"
+            value={itemName}
+            onChange={(e) => setItemName(e.target.value)}
+          />
+          <input
+            className="w-56 rounded border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm placeholder:text-neutral-600"
+            placeholder="Details (optional — e.g. specific roll)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+          <input
+            className="min-w-64 flex-1 rounded border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm placeholder:text-neutral-600"
+            placeholder="https://www.pathofexile.com/trade/search/Mirage/…"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void addOne()
             }}
           />
           <button
-            onClick={() => fileInput.current?.click()}
-            className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-900"
+            onClick={() => void addOne()}
+            disabled={!itemName.trim() || !url.trim()}
+            className="rounded border border-neutral-700 px-4 py-1.5 text-sm text-neutral-200 hover:bg-neutral-800 disabled:opacity-40"
           >
-            Upload .md
+            Add
           </button>
         </div>
+        {addError ? <div className="mt-2 text-xs text-red-400">{addError}</div> : null}
       </div>
 
-      {message ? <div className="border-b border-neutral-900 px-4 py-2 text-xs text-neutral-400">{message}</div> : null}
-
-      {atCap ? (
-        <div className="border-b border-neutral-900 px-4 py-2 text-xs text-amber-500">
-          At the {maxTracked}-search cap — remove something from Tracked before promoting more.
+      <div className="rounded-lg border border-neutral-800 bg-neutral-900">
+        <div className="flex items-center justify-between gap-3 border-b border-neutral-800 px-4 py-3">
+          <div>
+            <span className="font-medium text-neutral-100">Import</span>
+            <span className="ml-2 text-xs text-neutral-500">
+              {drafts.length} draft{drafts.length === 1 ? "" : "s"} waiting
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInput}
+              type="file"
+              accept=".md,.txt,text/markdown,text/plain"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) void upload(file)
+              }}
+            />
+            <button
+              onClick={() => fileInput.current?.click()}
+              className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800"
+            >
+              Import file
+            </button>
+            {drafts.length > 0 ? (
+              <button
+                onClick={() => void clearAll()}
+                className="rounded border border-neutral-800 px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-800 hover:text-red-400"
+              >
+                Clear all
+              </button>
+            ) : null}
+          </div>
         </div>
-      ) : null}
 
-      {drafts.length === 0 ? (
-        <div className="px-4 py-6 text-sm text-neutral-500">
-          No drafts yet. See docs/starter-picks.md for the file format, or upload one above.
-        </div>
-      ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-neutral-500">
-              <th className="px-4 py-2 font-normal">item</th>
-              <th className="px-2 py-2 font-normal">variant</th>
-              <th className="px-2 py-2 font-normal">added</th>
-              <th className="px-4 py-2 text-right font-normal">actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...groups.entries()].map(([itemName, rows]) =>
-              rows.map((d, i) => (
-                <tr key={d.key} className="border-t border-neutral-900">
-                  <td className="max-w-[220px] truncate px-4 py-2 text-neutral-200">
-                    {i === 0 ? itemName : <span className="text-neutral-700">···</span>}
-                  </td>
-                  <td className="px-2 py-2 text-neutral-400">{d.variant}</td>
-                  <td className="px-2 py-2 text-xs text-neutral-600">{ago(d.addedAt)}</td>
-                  <td className="px-4 py-2 text-right">
-                    <div className="flex justify-end gap-1">
-                      <a
-                        href={d.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-400 hover:bg-neutral-900"
-                      >
-                        open
-                      </a>
-                      <button
-                        onClick={() => void promote(d.key)}
-                        disabled={atCap || busyKey === d.key}
-                        className="rounded border border-neutral-700 px-2 py-0.5 text-xs text-neutral-200 hover:bg-neutral-900 disabled:opacity-40"
-                      >
-                        promote
-                      </button>
-                      <button
-                        onClick={() => void discard(d.key)}
-                        disabled={busyKey === d.key}
-                        className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-500 hover:bg-neutral-900 hover:text-red-400 disabled:opacity-40"
-                      >
-                        discard
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )),
-            )}
-          </tbody>
-        </table>
-      )}
+        {message ? <div className="border-b border-neutral-800 px-4 py-2 text-xs text-neutral-400">{message}</div> : null}
+
+        {atCap ? (
+          <div className="border-b border-neutral-800 px-4 py-2 text-xs text-amber-500">
+            At the {maxTracked}-search cap — remove something from Tracked before promoting more.
+          </div>
+        ) : null}
+
+        {drafts.length === 0 ? (
+          <div className="px-4 py-6 text-sm text-neutral-500">
+            No drafts yet. Add one above, or import a .md list — see docs/starter-picks.md for the format.
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-neutral-500">
+                <th className="px-4 py-2 font-normal">item</th>
+                <th className="w-2/5 px-2 py-2 font-normal">variant</th>
+                <th className="px-4 py-2 text-right font-normal">actions</th>
+                <th className="px-4 py-2 text-right font-normal">added</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...groups.entries()].map(([itemName, rows]) =>
+                rows.map((d, i) => (
+                  <tr key={d.key} className="border-t border-neutral-800">
+                    <td className="max-w-[220px] truncate px-4 py-2 text-neutral-200">
+                      {i === 0 ? itemName : <span className="text-neutral-700">···</span>}
+                    </td>
+                    <td className="px-2 py-2 text-neutral-400" title={d.notes || undefined}>
+                      {d.variant || <span className="text-neutral-600">—</span>}
+                      {d.notes ? <span className="ml-1 text-neutral-600">· {d.notes}</span> : null}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      <div className="flex justify-end gap-1">
+                        <a
+                          href={d.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-400 hover:bg-neutral-800"
+                        >
+                          open
+                        </a>
+                        <button
+                          onClick={() => void promote(d.key)}
+                          disabled={atCap || busyKey === d.key}
+                          className="rounded border border-neutral-700 px-2 py-0.5 text-xs text-neutral-200 hover:bg-neutral-800 disabled:opacity-40"
+                        >
+                          promote
+                        </button>
+                        <button
+                          onClick={() => void discard(d.key)}
+                          disabled={busyKey === d.key}
+                          className="rounded border border-neutral-800 px-2 py-0.5 text-xs text-neutral-500 hover:bg-neutral-800 hover:text-red-400 disabled:opacity-40"
+                        >
+                          discard
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 text-right text-xs text-neutral-600">{ago(d.addedAt)}</td>
+                  </tr>
+                )),
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   )
 }

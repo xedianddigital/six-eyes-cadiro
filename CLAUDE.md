@@ -18,30 +18,44 @@ deliberately separate apps with opposite temperaments:
   travels, never touches gameplay. It answers "what does this actually sell
   for, and which way is it moving?"
 
-Three tabs:
+Three tabs. **Tracked is display-only** — nothing gets added there directly
+anymore; every path onto it goes through Import, promoted in on purpose, so
+the dashboard never silently starts polling GGG on its own and stays free of
+input clutter (it's meant to run glanceable on a second screen, dense grid,
+no scrolling for a normal-sized watchlist).
 
-1. **Tracked** — the user pastes official trade search URLs
-   (`https://www.pathofexile.com/trade/search/{league}/{id}`). Each is polled
-   every ~20 min. Only **instant-buyout** listings priced in **chaos or
-   divine** are recorded. Cards show ask-median (p50) with p25/p75, listing
-   counts, new-listings/hour, and a p50 sparkline with trend over an
-   adjustable window (6/12/18/24/48h). Title is user-renamable in place (the
-   pencil icon) — the auto-generated "League · id8chars" title is a fallback,
-   not the point.
-2. **Import** — paste/upload a loosely-structured markdown list (item name
-   heading, then `- variant | url` lines per item; format tolerant of mixed
-   `#`/`##`/bare headings — see `lib/import.ts` and `docs/starter-picks.md`).
-   Parsed entries sit as drafts until a manual "promote" turns one into a real
-   tracked search (subject to MAX_TRACKED); "discard" drops it unpromoted.
-   Re-uploading merges (dedup by URL against both drafts and already-tracked
-   searches) rather than replacing. `lib/poe/seed-drafts.ts` bundles the
-   owner's own starter list, merged in automatically on first load of any
-   version that bumps `SEED_DRAFTS_VERSION` in config.ts.
+1. **Tracked** — polled every ~20 min. Only **instant-buyout** listings
+   priced in **chaos or divine** are recorded. Cards are deliberately compact:
+   p50 (median) headline with p75 as the one secondary reference (p25 was
+   dropped — a rarely-mispriced low outlier isn't worth a column), both with
+   a tooltip clarifying they're percentiles of the *sampled cheap frontier*,
+   not the whole market. Small inline sparkline, one condensed meta line
+   (listings/new-per-hour/polled-when). Title is user-renamable in place (the
+   pencil icon); notes (if any, from Import) show in the title's tooltip.
+   Grid gets denser at wider breakpoints, up to 6 columns.
+2. **Import** — the only way anything is added, one at a time (Name +
+   optional Details/notes + URL form) or in bulk (paste/upload a
+   loosely-structured markdown list — item heading, then `- variant | url`
+   lines; tolerant of mixed `#`/`##`/bare headings — see `lib/import.ts` and
+   `docs/starter-picks.md`). Parsed/added entries sit as drafts until a
+   manual "promote" turns one into a real tracked search (subject to
+   MAX_TRACKED); "discard" drops one, "Clear all" drops everything.
+   Re-uploading/re-adding merges (dedup by URL against both drafts and
+   already-tracked searches) rather than replacing. **Nothing is pre-seeded**
+   — this is public/open-source, the owner's own 40-entry picks live in
+   `my-drafts.md` at the repo root for manual upload only, never auto-loaded.
 3. **Discovery** — a curated universe of liquid uniques from poe.ninja's
    public API, verified a few per hour against live trade (name-only search,
    cheapest 20). Candidates whose cheap decile (p10) sits well below their own
    median (p50) are surfaced, sorted by that spread. All actions are manual:
    open / track / dismiss.
+
+Settings live on their own page (`/settings`, File → Settings in the desktop
+shell) rather than a header toggle — not something you flip mid-glance at the
+dashboard. Session state in the header is deliberately quiet: signed-out
+shows a warning + Sign in; signed-in shows only a Log out button (in the
+former settings-button slot), no persistent "session ok" text. Account
+details live on the Settings page.
 
 ## Hard constraints (non-negotiable, from the owner and from ToS reality)
 
@@ -79,12 +93,13 @@ electron/preload.js     window.poeDesktop bridge (login, version, update, crash)
 lib/poe/types.ts        All shared types + settings defaults + bounds.
 lib/poe/config.ts       JSON config store (.data/config.json): session, searches,
                         settings, discovery state, divine rate, drafts. Serialized
-                        writes. Seeds drafts from seed-drafts.ts once per
-                        SEED_DRAFTS_VERSION bump, merging (not replacing) on upgrade.
+                        writes. Nothing pre-seeded — addSingleDraft/
+                        importDraftsFromMarkdown are the only ways drafts appear.
 lib/import.ts           parseDraftMarkdown: loose "# Item \n - variant | url" format,
                         tolerant of #/##/bare headings. See docs/starter-picks.md.
-lib/poe/seed-drafts.ts  The owner's starter draft list, bundled as a TS string (not
-                        a docs/ file read at runtime — docs/ isn't packaged).
+lib/poe-desktop.d.ts    Single source of truth for the window.poeDesktop bridge
+                        type — declare it once, multiple `declare global` blocks
+                        across files must agree on the exact shape.
 lib/poe/rate-limit.ts   Header-driven limiter (retuned calm: 0.4 / 2000ms / 900ms).
 lib/poe/parse-url.ts    Trade URL -> {league, searchId}. Verbatim from SpeedyCadiro.
 lib/poe/jwt.ts          Whisper-token JWT decode; `tok:"hideout"` = instant buyout.
@@ -122,18 +137,26 @@ lib/engine/scheduler.ts Singleton (globalThis guard, auto-starts on first import
 lib/ninja.ts            poe.ninja client, 10-min floor per URL. Divine rate +
                         unique universe (Weapon/Armour/Accessory/Jewel/Flask,
                         dedupe by name keeping most-listed line).
-app/api/…               session, settings, tracked (+[id], +[id]/history),
-                        discovery, drafts (+[key]: promote/discard), status.
+app/api/…               session (incl. DELETE = log out), settings, tracked
+                        (+[id], +[id]/history — still the underlying "create a
+                        tracked search" primitive, just not UI-reachable
+                        directly anymore), discovery, drafts (+[key]:
+                        promote/discard; DELETE on drafts/ = clear all).
                         Next 16 note: route ctx params are `Promise<{id}>`/
                         `Promise<{key}>` and must be awaited.
 components/…            api.ts (view models/fetch helpers), sparkline (dep-free
-                        SVG), tracked-card (inline-renamable title), discovery-panel,
-                        import-panel, session-panel (desktop bridge login OR
-                        dev-mode manual cookie paste), settings-panel. UI polls
-                        local server every 60s; no SSE on purpose (data moves
-                        every ~20 min).
+                        SVG), tracked-card (compact, inline-renamable),
+                        discovery-panel, import-panel (single-entry form +
+                        bulk upload + clear-all), session-panel (compact header:
+                        Log out only when valid, warning+Sign-in when not),
+                        settings-panel (used by app/settings/page.tsx), settings-
+                        bridge (root-layout listener, routes File->Settings IPC
+                        to /settings). UI polls local server every 60s; no SSE
+                        on purpose (data moves every ~20 min).
 app/page.tsx            Dashboard: three tabs (Tracked/Import/Discovery), tab
-                        counts in the nav, add form with optional name field.
+                        counts in the nav. Display-only — no add form here.
+app/settings/page.tsx   Full settings page: account status + Log out, then
+                        SettingsPanel. Reached via File->Settings or /settings.
 scripts/                gen-build-info.mjs, prepare-standalone.mjs (verbatim from
                         SpeedyCadiro; the latter strips traced node_modules and
                         any stray .data before packaging).
@@ -156,19 +179,26 @@ trend. Card stats are always computed on read, never stored.
 
 ## Settings (all runtime-editable, clamped server-side)
 
-league (default "Mirage" — **placeholder**; the real 3.29 league name lands
-around 2026-07-25 and the user types it into Settings, nothing else needed),
-pollIntervalMin 20 (10–120), windowHours 6 (6/12/18/24/48), retentionDays 14
-(3–30), fetchPages 1 (1–3, ×10 listings), discoveryPerHour 4 (0–10, 0=off),
-manualDivineRate 150, useNinjaRate true, coordinationHoldSec 30 (0–120).
-MAX_TRACKED = 50.
+league (default "Mirage", confirmed genuinely the current live league as of
+2026-07-20, not a placeholder — will need updating when 3.29 actually
+launches), pollIntervalMin 20 (10–120), windowHours 6 (6/12/18/24/48),
+retentionDays 14 (3–30), fetchPages 1 (1–3, ×10 listings), discoveryPerHour 4
+(0–10, 0=off), manualDivineRate 150, useNinjaRate true, coordinationHoldSec
+30 (0–120). MAX_TRACKED = 50. pollIntervalMin/fetchPages carry an inline (ⓘ)
+tooltip in Settings explaining they can't bypass the real GGG safety ceiling
+(rate-limit.ts reads real headers unconditionally) — deliberately not hidden
+or hard-capped lower, the owner asked and this was the resolution.
 
 ## Current state
 
-v0.2.0 — bumped from v0.1.1 after the owner's first real install/test
-produced feedback (2026-07-20): the Import tab, tab restructuring, and
-inline card rename are new since the initial scaffold, on top of the
-v0.1.1 live-run bug fixes below (still no git tag, no release has shipped).
+v0.3.0 — bumped from v0.2.0 after a second round of real-install feedback
+(2026-07-20), UI-heavy: theme contrast fix (body/cards were the literal same
+color, #0a0a0a), Settings moved to its own page + File menu entry, Log out
+added (backend already had it, no UI called it), compact card redesign
+(p25 dropped, denser grid), and — the bigger one — nothing ships pre-seeded
+into the Import tab anymore (was the owner's personal test picks; this is
+public/open-source, moved to my-drafts.md at repo root for manual upload).
+Still no git tag, no release has actually shipped.
 Repo is now live at github.com/xedianddigital/six-eyes-cadiro
 (git initialized, pushed, CI green on `master`). `pnpm typecheck` clean,
 `next build` clean. First live run completed 2026-07-20 against the owner's
