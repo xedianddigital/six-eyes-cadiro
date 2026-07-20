@@ -12,9 +12,9 @@
     "typecheck": "tsc --noEmit",
     "electron": "electron .",
     "prepack:standalone": "node scripts/gen-build-info.mjs && next build && node scripts/prepare-standalone.mjs",
-    "dist": "pnpm prepack:standalone && electron-builder",
-    "dist:win": "pnpm prepack:standalone && electron-builder --win",
-    "dist:dir": "pnpm prepack:standalone && electron-builder --dir"
+    "dist": "pnpm prepack:standalone && electron-builder --publish never",
+    "dist:win": "pnpm prepack:standalone && electron-builder --win --publish never",
+    "dist:dir": "pnpm prepack:standalone && electron-builder --dir --publish never"
   },
   "dependencies": {
     "clsx": "^2.1.1",
