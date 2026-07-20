@@ -134,10 +134,12 @@ export async function validateSession(session: Session): Promise<{ ok: boolean; 
  * Fetch the saved query definition behind a trade search URL.
  *
  * Opening /trade/search/{league}/{id} in a browser makes this same GET to
- * rehydrate the filter panel. The exact response shape is not documented, so
- * be tolerant: take `query`/`sort` when present, otherwise pass the whole
- * object back to POST minus the id. Verify against real traffic during the
- * first live run (this is flagged in the README's handoff list).
+ * rehydrate the filter panel. Confirmed against real traffic: the response is
+ * `{id, query}` — GGG does not persist a sort with the saved query (sort is
+ * client-side UI state, not server state). Without an explicit sort the POST
+ * comes back in GGG's default order, not price order, which breaks every
+ * "cheap frontier" assumption this app makes — so price-ascending is forced
+ * here unless the response surprises us with one of its own.
  */
 export async function getSavedQuery(
   session: Session,
@@ -153,9 +155,12 @@ export async function getSavedQuery(
   )
   if (data && typeof data === "object" && "query" in data) {
     const { query, sort } = data as { query: unknown; sort?: unknown }
-    return sort ? { query, sort } : { query }
+    return { query, sort: sort ?? { price: "asc" } }
   }
   const { id: _drop, ...rest } = data ?? {}
+  if (rest && typeof rest === "object" && !("sort" in rest)) {
+    return { ...rest, sort: { price: "asc" } }
+  }
   return rest
 }
 
