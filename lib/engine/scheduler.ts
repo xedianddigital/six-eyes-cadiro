@@ -18,6 +18,7 @@ import { compact } from "@/lib/store/observations"
 import { fetchDivineRate } from "@/lib/ninja"
 import { RateLimitError, SessionError, CloudflareError } from "@/lib/poe/poe-client"
 import { rateLimiter } from "@/lib/poe/rate-limit"
+import { logEvent } from "@/lib/store/logs"
 
 const TICK_MS = 20_000
 const DIVINE_REFRESH_MS = 3600_000
@@ -100,6 +101,7 @@ class Scheduler {
         await compact(s.id, settings.retentionDays * 24 * 3600_000)
       }
       this.note("compaction")
+      await logEvent("compaction", `Compacted ${searches.length} series to ${settings.retentionDays}d retention`)
     }
     await refreshUniverse()
 
@@ -134,8 +136,10 @@ class Scheduler {
       try {
         await pollSearch(session, target)
         this.note(`polled ${target.title}`)
+        await logEvent("poll", `Polled "${target.title}"`)
       } catch (err) {
         this.handleError(err)
+        await logEvent("poll", `Poll failed for "${target.title}": ${(err as Error).message}`, "error")
       }
       return
     }
@@ -147,10 +151,15 @@ class Scheduler {
       this.lastDiscoveryAt = now
       try {
         const name = await verifyOne(session)
-        if (name) this.note(`verified ${name}`)
-        else this.status.state = "idle"
+        if (name) {
+          this.note(`verified ${name}`)
+          await logEvent("discovery", `Verified "${name}"`)
+        } else {
+          this.status.state = "idle"
+        }
       } catch (err) {
         this.handleError(err)
+        await logEvent("discovery", `Verification failed: ${(err as Error).message}`, "error")
       }
       return
     }
@@ -173,6 +182,7 @@ class Scheduler {
     const rate = await fetchDivineRate(league)
     if (rate) {
       await saveDivine({ rate, source: "ninja", updatedAt: Date.now() })
+      await logEvent("divine", `Divine rate refreshed: ${Math.round(rate)}c (poe.ninja)`)
     } else {
       const current = await getDivine()
       if (!current.updatedAt) {

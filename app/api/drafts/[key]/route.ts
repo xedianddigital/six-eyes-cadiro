@@ -2,6 +2,7 @@
 
 import { addSearch, getDraft, getSearches, removeDraft } from "@/lib/poe/config"
 import { MAX_TRACKED } from "@/lib/poe/types"
+import { logEvent } from "@/lib/store/logs"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -35,6 +36,7 @@ export async function POST(
     lastError: null,
   })
   await removeDraft(key)
+  await logEvent("import", `Promoted "${search.title}" to tracked`)
   return Response.json({ ok: true, search })
 }
 
@@ -46,5 +48,6 @@ export async function DELETE(
   const draft = await getDraft(key)
   if (!draft) return Response.json({ ok: false, error: "Unknown draft." }, { status: 404 })
   await removeDraft(key)
+  await logEvent("import", `Discarded draft "${draft.itemName}"`)
   return Response.json({ ok: true })
 }

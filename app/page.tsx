@@ -7,11 +7,20 @@
 // here ever silently starts polling GGG.
 
 import { useCallback, useEffect, useState } from "react"
-import { ago, getJson, sendJson, type CandidateModel, type DashboardModel, type DraftModel } from "@/components/api"
+import {
+  ago,
+  getJson,
+  sendJson,
+  type CandidateModel,
+  type DashboardModel,
+  type DraftModel,
+  type LogEntryModel,
+} from "@/components/api"
 import { TrackedCard } from "@/components/tracked-card"
 import { DiscoveryPanel } from "@/components/discovery-panel"
 import { ImportPanel } from "@/components/import-panel"
 import { SessionPanel } from "@/components/session-panel"
+import { LogsPanel } from "@/components/logs-panel"
 import { useConfirm } from "@/components/confirm-dialog"
 
 interface DiscoveryModel {
@@ -20,25 +29,28 @@ interface DiscoveryModel {
   candidates: CandidateModel[]
 }
 
-type Tab = "tracked" | "import" | "discovery"
+type Tab = "tracked" | "import" | "discovery" | "logs"
 
 export default function Page() {
   const [tab, setTab] = useState<Tab>("tracked")
   const [dash, setDash] = useState<DashboardModel | null>(null)
   const [discovery, setDiscovery] = useState<DiscoveryModel | null>(null)
   const [drafts, setDrafts] = useState<DraftModel[]>([])
+  const [logs, setLogs] = useState<LogEntryModel[]>([])
   const { confirm, alert, dialog } = useConfirm()
 
   const refresh = useCallback(async () => {
     try {
-      const [d, disc, dr] = await Promise.all([
+      const [d, disc, dr, lg] = await Promise.all([
         getJson<DashboardModel>("/api/tracked"),
         getJson<DiscoveryModel>("/api/discovery"),
         getJson<{ drafts: DraftModel[] }>("/api/drafts"),
+        getJson<{ logs: LogEntryModel[] }>("/api/logs"),
       ])
       setDash(d)
       setDiscovery(disc)
       setDrafts(dr.drafts)
+      setLogs(lg.logs)
     } catch {
       // Server briefly unavailable (restart); the next interval retries.
     }
@@ -109,9 +121,10 @@ export default function Page() {
           Six Eyes Cadiro
         </h1>
         <nav className="flex gap-1">
-          {tabButton("tracked", "Tracked", dash?.cards.length)}
+          {tabButton("tracked", "Dashboard", dash?.cards.length)}
           {tabButton("import", "Import", drafts.length)}
           {tabButton("discovery", "Discovery", discovery?.candidates.length)}
+          {tabButton("logs", "Logs", logs.length)}
         </nav>
         <div className="ml-auto flex items-center gap-3">
           <SessionPanel onChanged={() => void refresh()} />
@@ -150,6 +163,8 @@ export default function Page() {
           onAction={discoveryAction}
         />
       ) : null}
+
+      {tab === "logs" ? <LogsPanel logs={logs} /> : null}
 
       <footer className="mt-4 text-center text-xs text-neutral-600">
         Reads listings slowly through GGG&apos;s published rate limits. No automation of gameplay, no

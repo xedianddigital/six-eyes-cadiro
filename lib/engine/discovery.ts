@@ -62,7 +62,7 @@ export async function refreshUniverse(): Promise<void> {
 }
 
 /** The generated name-only search: online sellers, priced listings, cheapest first. */
-function queryFor(name: string): unknown {
+export function queryFor(name: string): unknown {
   return {
     query: {
       status: { option: "online" },

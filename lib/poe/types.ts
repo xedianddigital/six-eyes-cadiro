@@ -90,11 +90,27 @@ export interface SearchStats {
   countBelow75PctMedian: number
   /** GGG's total from the most recent poll (includes non-instant listings). */
   lastTotal: number | null
+  /**
+   * Actual elapsed hours the graph currently covers (oldest to newest
+   * snapshot in the window), capped at windowHours. Grows from 0 up to
+   * windowHours as snapshots accumulate — the trend/graph aren't at full
+   * precision until this reaches windowHours, so the UI shows both numbers
+   * rather than letting a short-lived search look as settled as a mature one.
+   */
+  spanHours: number
   trend: Trend
   /** Percent change of p50 over the window, e.g. -6.3. Null when unknown. */
   trendPct: number | null
   /** [t, p50] pairs for the sparkline, oldest first. */
   series: [number, number][]
+  /**
+   * Timestamps (each the later point of a pair) where the gap since the
+   * previous snapshot was more than 2x the configured poll interval — a
+   * paused search, a closed app, or a stalled scheduler, not a real price
+   * move. The sparkline draws a vertical marker at each instead of
+   * interpolating a smooth line across unknown territory.
+   */
+  gapMarkers: number[]
 }
 
 export interface Settings {

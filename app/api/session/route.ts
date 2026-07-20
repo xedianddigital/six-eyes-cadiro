@@ -6,6 +6,7 @@
 import { clearSession, getSession, saveSession } from "@/lib/poe/config"
 import { validateSession } from "@/lib/poe/poe-client"
 import { scheduler } from "@/lib/engine/scheduler"
+import { logEvent } from "@/lib/store/logs"
 import type { Session } from "@/lib/poe/types"
 
 export const runtime = "nodejs"
@@ -59,6 +60,11 @@ export async function POST(req: Request): Promise<Response> {
   const validation = await validateSession(session)
   await saveSession(session)
   scheduler.sessionChanged()
+  await logEvent(
+    "session",
+    validation.ok ? `Signed in as ${validation.account ?? "unknown account"}` : `Sign-in stored but not valid: ${validation.reason}`,
+    validation.ok ? "info" : "warn",
+  )
 
   return Response.json({ ok: true, valid: validation.ok, reason: validation.reason })
 }
@@ -66,5 +72,6 @@ export async function POST(req: Request): Promise<Response> {
 export async function DELETE(): Promise<Response> {
   await clearSession()
   scheduler.sessionChanged()
+  await logEvent("session", "Signed out")
   return Response.json({ ok: true })
 }

@@ -63,6 +63,13 @@ export interface DraftModel {
   addedAt: number
 }
 
+export interface LogEntryModel {
+  t: number
+  level: "info" | "warn" | "error"
+  kind: string
+  message: string
+}
+
 export interface SettingsModel {
   league: string
   pollIntervalMin: number
@@ -100,6 +107,13 @@ export function ago(t: number): string {
   const hrs = Math.floor(mins / 60)
   if (hrs < 24) return `${hrs}h ago`
   return `${Math.floor(hrs / 24)}d ago`
+}
+
+/** Mandatory, unambiguous 24h timestamp for the Logs tab — never a relative "Xm ago". */
+export function clockTime(t: number): string {
+  const d = new Date(t)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 export function chaosText(v: number | null): string {

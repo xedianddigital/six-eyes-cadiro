@@ -7,11 +7,14 @@
 export function Sparkline({
   series,
   trend,
+  gapMarkers,
   width = 220,
   height = 44,
 }: {
   series: [number, number][]
   trend: "rising" | "falling" | "stable" | "unknown"
+  /** Timestamps of unusually large gaps between snapshots — see SearchStats.gapMarkers. */
+  gapMarkers?: number[]
   width?: number
   height?: number
 }) {
@@ -47,9 +50,28 @@ export function Sparkline({
   const color =
     trend === "rising" ? "#4ade80" : trend === "falling" ? "#f87171" : "#a3a3a3"
 
+  const gapXs = (gapMarkers ?? [])
+    .filter((t) => t >= tMin && t <= tMax)
+    .map((t) => pad + ((t - tMin) / tSpan) * (width - pad * 2))
+
   return (
     <svg width={width} height={height} className="block">
+      {gapXs.length > 0 ? (
+        <title>Dashed line(s) mark a gap between polls much wider than usual — price didn&apos;t really move smoothly through it, the data is just missing there.</title>
+      ) : null}
       <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+      {gapXs.map((x, i) => (
+        <line
+          key={i}
+          x1={x}
+          x2={x}
+          y1={pad}
+          y2={height - pad}
+          stroke="#71717a"
+          strokeWidth="1"
+          strokeDasharray="2,2"
+        />
+      ))}
     </svg>
   )
 }

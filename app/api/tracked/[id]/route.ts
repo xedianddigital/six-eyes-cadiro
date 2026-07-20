@@ -2,6 +2,7 @@
 
 import { getSearches, removeSearch, updateSearch } from "@/lib/poe/config"
 import { dropSeries } from "@/lib/store/observations"
+import { logEvent } from "@/lib/store/logs"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -23,6 +24,12 @@ export async function PATCH(
   if (typeof body.active === "boolean") patch.active = body.active
   const search = await updateSearch(id, patch)
   if (!search) return Response.json({ ok: false, error: "Unknown search." }, { status: 404 })
+  if (typeof patch.active === "boolean") {
+    await logEvent("tracked", `${patch.active ? "Resumed" : "Paused"} "${search.title}"`)
+  }
+  if (typeof patch.title === "string") {
+    await logEvent("tracked", `Renamed a tracked search to "${patch.title}"`)
+  }
   return Response.json({ ok: true, search })
 }
 
@@ -31,9 +38,10 @@ export async function DELETE(
   ctx: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   const { id } = await ctx.params
-  const known = (await getSearches()).some((s) => s.id === id)
-  if (!known) return Response.json({ ok: false, error: "Unknown search." }, { status: 404 })
+  const search = (await getSearches()).find((s) => s.id === id)
+  if (!search) return Response.json({ ok: false, error: "Unknown search." }, { status: 404 })
   await removeSearch(id)
   await dropSeries(id)
+  await logEvent("tracked", `Removed "${search.title}" and its history`)
   return Response.json({ ok: true })
 }

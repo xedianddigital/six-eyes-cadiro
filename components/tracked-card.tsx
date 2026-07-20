@@ -5,8 +5,12 @@
 // to be read one at a time. Reading order still mirrors the decision — name,
 // price, direction — just packed tighter than a single-card layout would be.
 // Height is a hard constraint here: every row costs cards-per-screen, so
-// listing count / new-per-hour moved into a tooltip instead of a fourth
-// visible line once three rows stopped being enough to fit the target grid.
+// new-per-hour stays tooltip-only, but the sample size (n=) behind the
+// median and the graph's actual window coverage are both load-bearing for
+// trusting the number at a glance — they're folded into the existing price
+// and sparkline rows instead of a tooltip, per explicit feedback that
+// hiding them made mispricing counts hard to trust (was it 4 listings or
+// 40? has the graph even reached the configured window yet?).
 
 import { useState } from "react"
 import { ago, chaosText, type CardModel } from "./api"
@@ -16,6 +20,13 @@ const MEDIAN_TOOLTIP =
   "Median chaos-normalized ask price among the sampled cheapest instant-buyout listings in this window — not the whole market."
 const MISPRICED_TOOLTIP =
   "Live count of listings priced at or below 50% / 75% of the median above — not a percentile, an actual mispricing signal. Normally 0; nonzero means someone's underpricing right now."
+const SPAN_TOOLTIP =
+  "How much of the configured window the graph actually covers so far. A search polled only recently hasn't reached the full window yet — treat its trend as less certain until this reaches the target."
+
+function spanLabel(spanHours: number, windowHours: number): string {
+  const fmt = (h: number) => (h < 10 ? String(Math.round(h * 10) / 10) : String(Math.round(h)))
+  return `${fmt(spanHours)}/${fmt(windowHours)}h`
+}
 
 export function TrackedCard({
   card,
@@ -41,7 +52,7 @@ export function TrackedCard({
     else setDraftTitle(card.title)
   }
 
-  const metaTooltip = `${s.count} listings in window · ${s.newPerHour}/h new`
+  const metaTooltip = `${s.newPerHour}/h new listings`
 
   return (
     <div
@@ -107,11 +118,20 @@ export function TrackedCard({
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-baseline gap-1" title={MEDIAN_TOOLTIP}>
+        <div className="flex items-baseline gap-1" title={`${MEDIAN_TOOLTIP} n=${s.count} is the sample size behind it.`}>
           <span className="text-xl font-semibold tabular-nums text-neutral-50">{chaosText(s.p50)}</span>
-          <span className="text-xs text-neutral-400">c median</span>
+          <span className="text-xs text-neutral-400">
+            c median · n={s.count}
+          </span>
         </div>
-        <Sparkline series={s.series} trend={s.trend} width={64} height={20} />
+        <div className="flex flex-col items-end gap-0.5">
+          <Sparkline series={s.series} trend={s.trend} gapMarkers={s.gapMarkers} width={64} height={20} />
+          {s.series.length >= 2 ? (
+            <span className="text-[9px] tabular-nums text-neutral-500" title={SPAN_TOOLTIP}>
+              {spanLabel(s.spanHours, s.windowHours)}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       <div className="mt-0.5 flex items-center justify-between text-[11px] tabular-nums">

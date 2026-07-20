@@ -2,6 +2,7 @@
 // that turns stored observations into what a dashboard card shows.
 
 import type { Session, SearchStats, TrackedSearch } from "@/lib/poe/types"
+import { POLL_INTERVAL_MAX, POLL_INTERVAL_MIN } from "@/lib/poe/types"
 import { getDivine, getSettings, updateSearch } from "@/lib/poe/config"
 import { getSavedQuery, runSearch, sampleListings } from "@/lib/poe/poe-client"
 import {
@@ -99,18 +100,38 @@ export async function statsFor(searchId: string, windowHours: number): Promise<S
     .filter((s) => s.p50 != null)
     .map((s) => [s.t, s.p50 as number] as [number, number])
   const { trend, pct } = classifyTrend(series)
+
+  // Flag gaps between consecutive points that are much wider than a normal
+  // poll spacing (paused search, app closed, scheduler stalled) — otherwise
+  // the sparkline draws a straight interpolated line across the gap as if
+  // price moved smoothly through it, which is misleading. 2x the configured
+  // interval is generous enough to not fire on ordinary jitter/backoff.
+  const { pollIntervalMin } = await getSettings()
+  const expectedGapMs =
+    Math.min(POLL_INTERVAL_MAX, Math.max(POLL_INTERVAL_MIN, pollIntervalMin)) * 60_000
+  const gapMarkers: number[] = []
+  for (let i = 1; i < series.length; i += 1) {
+    if (series[i][0] - series[i - 1][0] > expectedGapMs * 2) gapMarkers.push(series[i][0])
+  }
   const fresh = await newObservationsInWindow(searchId, windowMs, now)
-  const spanHours = Math.min(windowHours, Math.max(1, (now - (snaps[0]?.t ?? now)) / 3600_000))
+  // Denominator for the new-per-hour rate only — floored at 1h so a brand new
+  // search with one snapshot doesn't divide by ~0. Kept separate from the
+  // span shown to the user below, which should read as the honest 0 it is.
+  const rateSpanHours = Math.min(windowHours, Math.max(1, (now - (snaps[0]?.t ?? now)) / 3600_000))
+  const spanHours =
+    snaps.length < 2 ? 0 : Math.min(windowHours, Math.round(((snaps[snaps.length - 1].t - snaps[0].t) / 3600_000) * 10) / 10)
   return {
     windowHours,
     count: inWindow.length,
-    newPerHour: Math.round((fresh / spanHours) * 10) / 10,
+    newPerHour: Math.round((fresh / rateSpanHours) * 10) / 10,
     p50: median,
     countBelowHalfMedian,
     countBelow75PctMedian,
     lastTotal: snaps.length ? snaps[snaps.length - 1].total : null,
+    spanHours,
     trend,
     trendPct: pct == null ? null : Math.round(pct * 10) / 10,
     series,
+    gapMarkers,
   }
 }

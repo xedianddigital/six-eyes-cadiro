@@ -2,6 +2,7 @@
 // add one manually, or discard everything at once.
 
 import { addSingleDraft, clearDrafts, getDrafts, importDraftsFromMarkdown } from "@/lib/poe/config"
+import { logEvent } from "@/lib/store/logs"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -23,6 +24,7 @@ export async function POST(req: Request): Promise<Response> {
       return Response.json({ ok: false, error: "markdown is required." }, { status: 400 })
     }
     const added = await importDraftsFromMarkdown(body.markdown)
+    await logEvent("import", `Imported ${added} new draft${added === 1 ? "" : "s"} from a markdown upload`)
     return Response.json({ ok: true, added, drafts: await getDrafts() })
   }
 
@@ -36,6 +38,7 @@ export async function POST(req: Request): Promise<Response> {
       url: body.url,
     })
     if (!result.ok) return Response.json(result, { status: 400 })
+    await logEvent("import", `Added draft "${result.draft.itemName}"`)
     return Response.json({ ok: true, draft: result.draft, drafts: await getDrafts() })
   }
 
@@ -43,6 +46,8 @@ export async function POST(req: Request): Promise<Response> {
 }
 
 export async function DELETE(): Promise<Response> {
+  const count = (await getDrafts()).length
   await clearDrafts()
+  await logEvent("import", `Cleared all ${count} draft${count === 1 ? "" : "s"}`)
   return Response.json({ ok: true })
 }

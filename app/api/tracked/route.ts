@@ -6,6 +6,7 @@ import { addSearch, getDivine, getSearches, getSettings } from "@/lib/poe/config
 import { parseTradeUrl } from "@/lib/poe/parse-url"
 import { statsFor } from "@/lib/engine/tracker"
 import { scheduler } from "@/lib/engine/scheduler"
+import { logEvent } from "@/lib/store/logs"
 import { MAX_TRACKED } from "@/lib/poe/types"
 
 export const runtime = "nodejs"
@@ -71,5 +72,6 @@ export async function POST(req: Request): Promise<Response> {
     lastPolledAt: 0,
     lastError: null,
   })
+  await logEvent("tracked", `Added "${search.title}"`)
   return Response.json({ ok: true, search })
 }
