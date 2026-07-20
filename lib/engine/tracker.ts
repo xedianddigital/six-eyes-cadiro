@@ -112,6 +112,9 @@ export async function statsFor(searchId: string, windowHours: number): Promise<S
   const median = quartiles(prices).p50
   const countBelowHalfMedian = median == null ? 0 : prices.filter((p) => p <= median * 0.5).length
   const countBelow75PctMedian = median == null ? 0 : prices.filter((p) => p <= median * 0.75).length
+  const divineListings = inWindow.filter((o) => o.currency === "divine").length
+  const chaosListings = inWindow.length - divineListings
+  const dominantCurrency: "chaos" | "divine" = divineListings > chaosListings ? "divine" : "chaos"
   const snaps = await snapshotsInWindow(searchId, windowMs, now)
   const series = snaps
     .filter((s) => s.p50 != null)
@@ -145,6 +148,9 @@ export async function statsFor(searchId: string, windowHours: number): Promise<S
     countBelowHalfMedian,
     countBelow75PctMedian,
     lastTotal: snaps.length ? snaps[snaps.length - 1].total : null,
+    chaosListings,
+    divineListings,
+    dominantCurrency,
     spanHours,
     trend,
     trendPct: pct == null ? null : Math.round(pct * 10) / 10,

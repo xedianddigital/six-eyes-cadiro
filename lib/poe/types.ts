@@ -91,6 +91,18 @@ export interface SearchStats {
   /** GGG's total from the most recent poll (includes non-instant listings). */
   lastTotal: number | null
   /**
+   * How many of the window's listings were originally priced in each
+   * currency, before chaos-normalization. The card shows whichever
+   * currency actually dominates this item's market as the primary
+   * (large-digit) price, with the other as a converted secondary figure —
+   * always defaulting to chaos on a tie (0 divine listings is the common
+   * case, and chaos is this app's base unit / more legible at small
+   * magnitudes anyway).
+   */
+  chaosListings: number
+  divineListings: number
+  dominantCurrency: "chaos" | "divine"
+  /**
    * Actual elapsed hours the graph currently covers (oldest to newest
    * snapshot in the window), capped at windowHours. Grows from 0 up to
    * windowHours as snapshots accumulate — the trend/graph aren't at full

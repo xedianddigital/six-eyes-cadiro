@@ -61,16 +61,31 @@ export async function refreshUniverse(): Promise<void> {
   await saveDiscovery({ refreshedAt: Date.now(), candidates })
 }
 
-/** The generated name-only search: online sellers, priced listings, cheapest first. */
+/**
+ * The generated name-only search: online sellers, cheapest first.
+ *
+ * Deliberately carries NO sale_type filter. `trade_filters.filters.
+ * sale_type: { option: "priced" }` was here originally, intended to mean
+ * "has a price" — but opening a generated URL in a real browser (the
+ * "open" button on a Discovery row) showed the trade site's own filter
+ * panel reading "Sale type: In-person only", the opposite of what this app
+ * is built around (see the hard constraint on instant-buyout-only pricing
+ * in CLAUDE.md). Rather than guess at the correct option string, the
+ * filter is dropped entirely: this app's actual buyout/no-buyout
+ * distinction has never come from a server-side search filter anyway — it
+ * comes from decoding each fetched listing's whisper/hideout token
+ * client-side (`decodeWhisperToken` in poe-client.ts's `sampleListings`),
+ * which is unaffected by this query's filters either way. Dropping it only
+ * means the initial 10-20 sampled ids may include a few more
+ * non-instant/negotiable listings that then get correctly filtered out
+ * after the fetch — a minor sampling-efficiency cost, not a correctness one.
+ */
 export function queryFor(name: string): unknown {
   return {
     query: {
       status: { option: "online" },
       name,
       stats: [{ type: "and", filters: [] }],
-      filters: {
-        trade_filters: { filters: { sale_type: { option: "priced" } } },
-      },
     },
     sort: { price: "asc" },
   }

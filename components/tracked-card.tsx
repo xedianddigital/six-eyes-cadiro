@@ -21,6 +21,9 @@ import { Sparkline } from "./sparkline"
 
 const MEDIAN_TOOLTIP =
   "Median chaos-normalized ask price among the sampled cheapest instant-buyout listings in this window — not the whole market."
+function dominantTooltip(s: CardModel["stats"]): string {
+  return `${MEDIAN_TOOLTIP} Shown in whichever currency most sellers actually used: ${s.chaosListings} listing${s.chaosListings === 1 ? "" : "s"} priced in chaos, ${s.divineListings} in divine.`
+}
 const MISPRICED_TOOLTIP =
   "Live count of listings priced at or below 50% / 75% of the median above — not a percentile, an actual mispricing signal. Normally 0; nonzero means someone's underpricing right now."
 const LISTINGS_TOOLTIP =
@@ -107,18 +110,26 @@ export function TrackedCard({
               </button>
             </div>
           )}
-          <div
-            className="flex items-baseline gap-1"
-            title={`${MEDIAN_TOOLTIP}${divine ? ` Divine equivalent at the app's current rate (${Math.round(divineRate)}c = 1 divine).` : ""}`}
-          >
-            <span className="text-xl font-semibold tabular-nums text-neutral-50">{chaosText(s.p50)}</span>
-            <span className="text-sm font-semibold text-neutral-300">c</span>
-            {divine ? (
+          <div className="flex items-baseline gap-1" title={dominantTooltip(s)}>
+            {s.dominantCurrency === "divine" && divine ? (
               <>
+                <span className="text-xl font-semibold tabular-nums text-neutral-50">{divine}</span>
+                <span className="text-sm font-semibold text-neutral-300">d</span>
                 <span className="mx-1 text-neutral-600">·</span>
-                <span className="text-sm tabular-nums text-neutral-400">{divine}d</span>
+                <span className="text-sm tabular-nums text-neutral-400">{chaosText(s.p50)}c</span>
               </>
-            ) : null}
+            ) : (
+              <>
+                <span className="text-xl font-semibold tabular-nums text-neutral-50">{chaosText(s.p50)}</span>
+                <span className="text-sm font-semibold text-neutral-300">c</span>
+                {divine ? (
+                  <>
+                    <span className="mx-1 text-neutral-600">·</span>
+                    <span className="text-sm tabular-nums text-neutral-400">{divine}d</span>
+                  </>
+                ) : null}
+              </>
+            )}
           </div>
         </div>
 

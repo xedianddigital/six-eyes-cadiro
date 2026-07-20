@@ -1,6 +1,7 @@
 // Global settings: league, polling cadence, window, discovery pace, divine rate.
 
-import { getSettings, saveSettings } from "@/lib/poe/config"
+import { getSettings, saveSettings, saveDivine } from "@/lib/poe/config"
+import { scheduler } from "@/lib/engine/scheduler"
 import {
   DISCOVERY_PER_HOUR_MAX,
   FETCH_PAGES_MAX,
@@ -55,5 +56,22 @@ export async function PATCH(req: Request): Promise<Response> {
     patch.coordinationHoldSec = clamp(body.coordinationHoldSec, 0, 120)
   }
 
-  return Response.json({ ok: true, settings: await saveSettings(patch) })
+  const settings = await saveSettings(patch)
+
+  // Without this, the divine rate (and every card's divine-equivalent
+  // display, which reads it live) stayed stale against the scheduler's
+  // hourly refresh cadence for up to an hour after changing either of
+  // these — a toggle that visibly does nothing for 60 minutes reads as
+  // broken. Manual mode needs no network call, so apply it immediately;
+  // switching back to poe.ninja needs a real fetch, so just make it due
+  // on the next 20s tick instead of waiting out the hour.
+  if ("useNinjaRate" in patch || "manualDivineRate" in patch) {
+    if (settings.useNinjaRate) {
+      scheduler.forceDivineRefresh()
+    } else {
+      await saveDivine({ rate: settings.manualDivineRate, source: "manual", updatedAt: Date.now() })
+    }
+  }
+
+  return Response.json({ ok: true, settings })
 }
