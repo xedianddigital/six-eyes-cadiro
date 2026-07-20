@@ -15,10 +15,22 @@ const NINJA_BASE = "https://poe.ninja/poe1/api/economy"
 const REFRESH_FLOOR_MS = 10 * 60 * 1000
 
 const lastCall = new Map<string, number>()
+/**
+ * Last successful response per URL. The floor above must never mean "return
+ * nothing" while good data exists — that regressed a real setting (toggling
+ * "use poe.ninja rate" back on) to silently doing nothing whenever the floor
+ * hadn't elapsed since some earlier call (e.g. the routine hourly refresh),
+ * because the caller saw null and assumed "no data available" rather than
+ * "ask again later." Within the floor, serve the cached value; only return
+ * null when there truly isn't one yet (first call) or a live fetch fails
+ * with nothing cached to fall back on.
+ */
+const lastGood = new Map<string, unknown>()
 
 async function ninjaJson<T>(url: string): Promise<T | null> {
   const prev = lastCall.get(url) ?? 0
-  if (Date.now() - prev < REFRESH_FLOOR_MS) return null
+  const cached = () => (lastGood.has(url) ? (lastGood.get(url) as T) : null)
+  if (Date.now() - prev < REFRESH_FLOOR_MS) return cached()
   lastCall.set(url, Date.now())
   try {
     const res = await fetch(url, {
@@ -28,10 +40,12 @@ async function ninjaJson<T>(url: string): Promise<T | null> {
       },
       cache: "no-store",
     })
-    if (!res.ok) return null
-    return (await res.json()) as T
+    if (!res.ok) return cached()
+    const data = (await res.json()) as T
+    lastGood.set(url, data)
+    return data
   } catch {
-    return null
+    return cached()
   }
 }
 

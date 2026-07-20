@@ -2,6 +2,7 @@
 
 import { getSettings, saveSettings, saveDivine } from "@/lib/poe/config"
 import { scheduler } from "@/lib/engine/scheduler"
+import { fetchDivineRate } from "@/lib/ninja"
 import {
   DISCOVERY_PER_HOUR_MAX,
   FETCH_PAGES_MAX,
@@ -62,15 +63,21 @@ export async function PATCH(req: Request): Promise<Response> {
   // display, which reads it live) stayed stale against the scheduler's
   // hourly refresh cadence for up to an hour after changing either of
   // these — a toggle that visibly does nothing for 60 minutes reads as
-  // broken. Manual mode needs no network call, so apply it immediately;
-  // switching back to poe.ninja needs a real fetch, so just make it due
-  // on the next 20s tick instead of waiting out the hour.
+  // broken. Both branches apply synchronously here rather than waiting for
+  // the scheduler's next tick: manual mode needs no network call at all,
+  // and re-enabling poe.ninja is safe to call inline too now that
+  // fetchDivineRate serves its last-known-good cached value instead of
+  // null when called again inside its 10-minute floor (see lib/ninja.ts) —
+  // that floor-returning-null-instead-of-cache was the actual bug behind
+  // "re-checking poe.ninja doesn't bring the rate back."
   if ("useNinjaRate" in patch || "manualDivineRate" in patch) {
     if (settings.useNinjaRate) {
-      scheduler.forceDivineRefresh()
+      const rate = await fetchDivineRate(settings.league)
+      if (rate) await saveDivine({ rate, source: "ninja", updatedAt: Date.now() })
     } else {
       await saveDivine({ rate: settings.manualDivineRate, source: "manual", updatedAt: Date.now() })
     }
+    scheduler.noteDivineRefreshed()
   }
 
   return Response.json({ ok: true, settings })

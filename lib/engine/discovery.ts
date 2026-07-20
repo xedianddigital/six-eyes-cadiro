@@ -18,6 +18,7 @@ import { runSearch, sampleListings, tradeSearchUrl } from "@/lib/poe/poe-client"
 import { fetchUniqueUniverse } from "@/lib/ninja"
 import { percentile } from "@/lib/stats"
 import { getDivine } from "@/lib/poe/config"
+import { logEvent } from "@/lib/store/logs"
 
 const UNIVERSE_TTL_MS = 24 * 3600_000
 /** Verified numbers go stale; revisit a candidate after this long. */
@@ -27,11 +28,39 @@ const MIN_CHAOS = 15
 const MAX_CHAOS = 6000
 /** Keep this many candidates in rotation, ranked by liquidity. */
 const UNIVERSE_SIZE = 80
+/** Bump whenever queryFor()'s shape changes in a way that invalidates every previously-verified id/url. */
+const QUERY_VERSION = 2
 
 /** Refresh the candidate universe from poe.ninja if it's older than a day. */
 export async function refreshUniverse(): Promise<void> {
   const settings = await getSettings()
-  const discovery = await getDiscovery()
+  let discovery = await getDiscovery()
+
+  if (discovery.queryVersion !== QUERY_VERSION) {
+    // Every previously-verified candidate's `verified.url` was minted by a
+    // POST using the OLD queryFor shape — for the sale_type bug fixed in
+    // 0.6.0, that means the "open" link still shows "In-person only" on the
+    // real trade site no matter what the current code generates, because
+    // the id is permanently bound to whatever query actually created it.
+    // Each candidate's own 12h re-verify would eventually catch up on its
+    // own, but that's a slow, silent fix a user has no way to know is
+    // coming. Force it now instead: wipe every `verified` so the next
+    // rotation re-verifies everyone against the corrected query.
+    const stale = discovery.candidates.filter((c) => c.verified).length
+    discovery = {
+      ...discovery,
+      candidates: discovery.candidates.map((c) => (c.verified ? { ...c, verified: null } : c)),
+      queryVersion: QUERY_VERSION,
+    }
+    await saveDiscovery(discovery)
+    if (stale > 0) {
+      await logEvent(
+        "discovery",
+        `Query format changed — re-verifying ${stale} candidate${stale === 1 ? "" : "s"} (old links had a wrong trade filter baked in)`,
+      )
+    }
+  }
+
   if (Date.now() - discovery.refreshedAt < UNIVERSE_TTL_MS) return
 
   const universe = await fetchUniqueUniverse(settings.league)

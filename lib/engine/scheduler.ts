@@ -68,15 +68,13 @@ class Scheduler {
   }
 
   /**
-   * Force the divine rate to re-resolve on the very next tick instead of
-   * waiting up to DIVINE_REFRESH_MS (1h). Called when Settings changes
-   * useNinjaRate/manualDivineRate — without this, toggling "use poe.ninja
-   * rate" off left the old rate in place (and every card's divine-
-   * equivalent silently stale against it) for up to an hour, which reads
-   * as the toggle having done nothing.
+   * Tell the scheduler a divine refresh was just done directly (by the
+   * settings route, synchronously, on a useNinjaRate/manualDivineRate
+   * change) so its own hourly cycle doesn't immediately redo the same
+   * work on the very next tick.
    */
-  forceDivineRefresh(): void {
-    this.lastDivineAt = 0
+  noteDivineRefreshed(): void {
+    this.lastDivineAt = Date.now()
   }
 
   private async tick(): Promise<void> {

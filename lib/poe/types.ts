@@ -232,6 +232,17 @@ export interface AppConfig {
     /** Unix ms of the last poe.ninja universe refresh. */
     refreshedAt: number
     candidates: DiscoveryCandidate[]
+    /**
+     * Version of the generated query shape (discovery.ts's queryFor) that
+     * every candidate's `verified` data was last computed against. Bumped
+     * whenever that shape changes in a way that invalidates previously-
+     * verified search ids/urls (e.g. a wrong trade filter baked into every
+     * one of them) — undefined/mismatched forces a one-time full
+     * re-verification in refreshUniverse rather than leaving stale,
+     * wrongly-filtered URLs sitting around until each candidate's normal
+     * 12h re-verify happens to come up.
+     */
+    queryVersion?: number
   }
   divine: {
     /** chaos per divine currently in use. */
