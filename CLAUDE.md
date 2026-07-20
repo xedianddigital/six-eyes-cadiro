@@ -144,37 +144,59 @@ MAX_TRACKED = 50.
 
 ## Current state
 
-v0.1.0 scaffold, generated 2026-07-19/20 in a Claude chat session with a Linux
-container. `pnpm typecheck` clean, `next build` clean, server boots, API
-surface smoke-tested (settings roundtrip, add/list tracked, status, 50-cap).
-**Never run against real GGG endpoints or inside Electron** — the container
-had no access to pathofexile.com and no display.
+v0.1.0, iterated post-scaffold (no version bump yet — that's a release
+decision, left for the owner). Repo is now live at
+github.com/xedianddigital/six-eyes-cadiro
+(git initialized, pushed, CI green on `master`). `pnpm typecheck` clean,
+`next build` clean. First live run completed 2026-07-20 against the owner's
+real account and the real current league (**"Mirage" is the actual live
+league name, not a placeholder** — confirmed via a real trade URL and via
+poe.ninja's `/poe1/api/economy/leagues`) from a container with real network
+access to pathofexile.com and poe.ninja. Findings below; both bugs found are
+already fixed and pushed.
+
+Also fixed incidentally: `pnpm`'s default minimum-release-age supply-chain
+policy blocked two transitive deps (`fast-uri`, `postcss`, both published
+<24h before install) — `--trust-lockfile` is now used locally and in CI.
+And `electron-builder` was implicitly attempting to publish to GitHub
+Releases on every plain push (no `GH_TOKEN` in that context) — `dist`/
+`dist:win`/`dist:dir` now pass `--publish never`; the dedicated
+`action-gh-release` CI step still handles real releases on `v*` tags.
 
 ## First tasks for a fresh session (in order)
 
-1. **Verify `getSavedQuery`** (`lib/poe/poe-client.ts`). It GETs
-   `/api/trade/search/{league}/{id}` and assumes the response carries the
-   saved query as `{query, sort}` (falls back to whole-body-minus-id). This
-   mirrors what the trade site does when rehydrating a search URL, but the
-   shape was written from knowledge, not observed traffic. Sign in, add one
-   real search, watch one poll complete. Fix locally if the shape differs.
-2. **Verify instant-buyout detection on polled fetches**: `tok:"hideout"` in
-   the whisper token JWT is confirmed for *live-search* results (SpeedyCadiro
-   does exactly this in production); confirm the same claim appears on
-   listings returned by plain `/api/trade/fetch` for a saved search. If some
-   instant-buyout listings carry a different token type, the filter in
-   `sampleListings` silently drops everything and cards stay empty — that is
-   the symptom to look for.
-3. **Watch the rate headers** in early runs (scheduler status exposes limiter
-   state at `/api/status`): confirm spacing settles sensibly against the real
-   published budget and no 429 ever appears in normal operation.
+1. ~~Verify `getSavedQuery`~~ **Done 2026-07-20.** Confirmed shape is exactly
+   `{id, query}` — no `sort` ever comes back, because sort is trade-site
+   client state, not server state. This was a real bug: without an explicit
+   sort, tracked-search polls sampled GGG's *default* order, not price
+   order, contradicting tracker.ts's "cheap frontier" assumption the whole
+   app is built on. Fixed: `getSavedQuery` now forces `sort:{price:"asc"}`
+   when the response doesn't supply one (discovery.ts's generated queries
+   already did this correctly).
+2. ~~Verify instant-buyout detection~~ **Done 2026-07-20.** `hideout_token`
+   with `tok:"hideout"` confirmed present on real `/api/trade/fetch` results
+   for a saved search, decodes exactly as `jwt.ts` expects. No fix needed.
+3. ~~Watch the rate headers~~ **Done 2026-07-20.** Limiter widened spacing to
+   12.5s under real budget pressure early on, settled back to the 2000ms
+   floor once usage dropped; no 429 seen. Looks sane.
+3a. **New, unplanned finding: poe.ninja's API had moved entirely.** The old
+   flat `/api/data/itemoverview` and `/api/data/currencyoverview` paths
+   404 for every league now (poe.ninja split PoE1/PoE2 under
+   `/poe1/api/economy/...` at some point after this app was written). Fixed
+   in `lib/ninja.ts` against their now-published reference at
+   poe.ninja/docs/api; field names were unchanged, only the base path moved.
+   Confirmed live: divine rate resolves via ninja (not the manual fallback),
+   discovery universe pulled 80 real candidates.
 4. Run inside Electron (`pnpm electron` against `pnpm dev`, then a packaged
    `pnpm dist:dir`), confirm the login window flow stores a valid session.
+   **Still open** — needs a display; not done from this Linux container.
 5. Apply the SpeedyCadiro coordination patch (docs/) in that repo, then test
    the hold: run both, travel in SpeedyCadiro, see this scheduler report
-   "holding for SpeedyCadiro".
+   "holding for SpeedyCadiro". **Still open** — touches a second repo,
+   deliberately not done without asking first.
 6. League rename when 3.29 launches: Settings → League. Tracked URLs carry
    their own league; old-league cards just go stale and can be removed.
+   **Not yet needed** — "Mirage" is still the live league as of 2026-07-20.
 
 ## Conventions
 
