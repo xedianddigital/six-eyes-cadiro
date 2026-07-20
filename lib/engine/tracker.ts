@@ -4,7 +4,7 @@
 import type { Session, SearchStats, TrackedSearch } from "@/lib/poe/types"
 import { POLL_INTERVAL_MAX, POLL_INTERVAL_MIN } from "@/lib/poe/types"
 import { getDivine, getSettings, updateSearch } from "@/lib/poe/config"
-import { getSavedQuery, runSearch, sampleListings } from "@/lib/poe/poe-client"
+import { getSavedQuery, runSearch, sampleListings, tradeSearchUrl } from "@/lib/poe/poe-client"
 import {
   newObservationsInWindow,
   observationsInWindow,
@@ -48,13 +48,30 @@ export async function pollSearch(session: Session, search: TrackedSearch): Promi
       run = await runSearch(session, search.league, query)
     }
 
+    // GGG's POST mints a search id per call — it is NOT guaranteed stable
+    // across repeat submissions of the same query body (confirmed: a
+    // Discovery-generated query visibly returns a different id on every
+    // poll, unlike a real trade-site saved search). /api/trade/fetch's
+    // query= parameter has to reference the id that actually produced the
+    // ids being fetched below, or GGG can't resolve pricing/whisper tokens
+    // for them — using the stored, possibly-stale search.searchId here is
+    // exactly what silently broke every poll after the first for
+    // Discovery-tracked searches (they'd poll, update lastPolledAt, report
+    // no error, and never record a price). Keep the stored searchId/url in
+    // sync with whatever GGG just handed back so the card's "open" link and
+    // any future getSavedQuery retry stay pointed at something live too.
+    const searchId = run.id || search.searchId
+    if (searchId !== search.searchId) {
+      await updateSearch(search.id, { searchId, url: tradeSearchUrl(search.league, searchId) })
+    }
+
     const pages = Math.max(1, Math.min(settings.fetchPages, 3))
     const seen: { listingId: string; chaos: number; amount: number; currency: "chaos" | "divine" }[] = []
     let sampledPriced = 0
     for (let p = 0; p < pages; p += 1) {
       const ids = run.result.slice(p * 10, p * 10 + 10)
       if (ids.length === 0) break
-      const listings = await sampleListings(session, ids, search.searchId, search.league)
+      const listings = await sampleListings(session, ids, searchId, search.league)
       for (const l of listings) {
         sampledPriced += 1
         if (!l.instantBuyout) continue

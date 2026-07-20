@@ -82,7 +82,7 @@ export interface LogPage {
  * unbounded log.
  */
 export async function getLogs(opts: { sinceT?: number; beforeT?: number; limit?: number } = {}): Promise<LogPage> {
-  const { sinceT, beforeT, limit = 100 } = opts
+  const { sinceT, beforeT, limit = 25 } = opts
   const all = await ensureLoaded()
   let newestFirst = [...all].reverse()
   if (sinceT != null) newestFirst = newestFirst.filter((e) => e.t >= sinceT)

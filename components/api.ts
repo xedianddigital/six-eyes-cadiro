@@ -123,15 +123,14 @@ export function chaosText(v: number | null): string {
 
 /**
  * Divine-orb equivalent of a chaos price, e.g. 120c at a 171c rate reads as
- * "0.7d". More decimals at small magnitudes (0.7, 0.03) than chaosText uses,
- * since a single divine is worth enough that whole-number rounding would
- * hide most of what's actually being asked for. Null when there's no price
- * yet or no divine rate to convert with (rate not loaded, or configured to 0).
+ * "0.7d". Always exactly one decimal below 10 divine (never "0.04" — round
+ * to "0.0" rather than show a second digit) so it stays visually secondary
+ * to the chaos figure. Null when there's no price yet or no divine rate to
+ * convert with (rate not loaded, or configured to 0).
  */
 export function divineText(chaos: number | null, divineRate: number): string | null {
   if (chaos == null || !divineRate) return null
   const d = chaos / divineRate
   if (d >= 10) return String(Math.round(d))
-  if (d >= 1) return String(Math.round(d * 10) / 10)
-  return String(Math.round(d * 100) / 100)
+  return d.toFixed(1)
 }

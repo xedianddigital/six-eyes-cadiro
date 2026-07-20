@@ -23,6 +23,6 @@ export async function GET(req: Request): Promise<Response> {
   const beforeParam = url.searchParams.get("before")
   const beforeT = beforeParam != null ? Number(beforeParam) : undefined
 
-  const page = await getLogs({ sinceT, beforeT: Number.isFinite(beforeT) ? beforeT : undefined, limit: 100 })
+  const page = await getLogs({ sinceT, beforeT: Number.isFinite(beforeT) ? beforeT : undefined, limit: 25 })
   return Response.json({ ...page, windowHours: settings.windowHours })
 }

@@ -112,9 +112,13 @@ export function TrackedCard({
             title={`${MEDIAN_TOOLTIP}${divine ? ` Divine equivalent at the app's current rate (${Math.round(divineRate)}c = 1 divine).` : ""}`}
           >
             <span className="text-xl font-semibold tabular-nums text-neutral-50">{chaosText(s.p50)}</span>
-            <span className="text-xs text-neutral-400">
-              c{divine ? ` | ${divine}d` : ""} median
-            </span>
+            <span className="text-sm font-semibold text-neutral-300">c</span>
+            {divine ? (
+              <>
+                <span className="mx-1 text-neutral-600">·</span>
+                <span className="text-sm tabular-nums text-neutral-400">{divine}d</span>
+              </>
+            ) : null}
           </div>
         </div>
 
@@ -131,21 +135,21 @@ export function TrackedCard({
           <button
             onClick={() => onRemove(card.id)}
             title="Remove"
-            className="rounded border border-neutral-700 px-1.5 py-0.5 text-xs text-neutral-400 hover:bg-neutral-800 hover:text-red-400"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-neutral-700 text-xs text-neutral-400 hover:bg-neutral-800 hover:text-red-400"
           >
             ✕
           </button>
           <button
             onClick={() => onPause(card.id, !card.active)}
             title={card.active ? "Pause" : "Resume"}
-            className="rounded border border-neutral-700 px-1.5 py-0.5 text-xs text-neutral-300 hover:bg-neutral-800"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-neutral-700 text-xs text-neutral-300 hover:bg-neutral-800"
           >
             {card.active ? "⏸" : "▶"}
           </button>
         </div>
       </div>
 
-      <div className="mt-0.5 flex items-center justify-between text-[11px] tabular-nums">
+      <div className="mt-0.5 flex items-center justify-between text-[11px] tabular-nums pr-7">
         <span className="flex gap-2" title={MISPRICED_TOOLTIP}>
           <span className={s.countBelowHalfMedian > 0 ? "font-medium text-green-400" : "text-neutral-500"}>
             ≤50% {s.countBelowHalfMedian}
@@ -153,8 +157,8 @@ export function TrackedCard({
           <span className={s.countBelow75PctMedian > 0 ? "font-medium text-amber-400" : "text-neutral-500"}>
             ≤75% {s.countBelow75PctMedian}
           </span>
-          <span className="text-neutral-500" title={LISTINGS_TOOLTIP}>
-            listings:{s.count}
+          <span className="text-xs text-neutral-400" title={LISTINGS_TOOLTIP}>
+            Listings: {s.count}
           </span>
         </span>
         <span className={trendColor} title={metaTooltip}>
