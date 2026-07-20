@@ -10,14 +10,17 @@
 // text rather than tooltip-only (was it 4 listings or 40? has the graph even
 // reached the configured window yet?).
 //
-// Layout is three columns (title+price on the left; span label above the
-// sparkline in the middle; remove/pause/open stacked on the right, flush to
-// the border), vertically centered rather than stretched to share the row's
-// full height — three 24px buttons are the tallest column now, and
-// stretching the shorter ones to match just spread their own contents out
-// with awkward extra gaps (read as "room for a 4th button"). Centering
-// instead keeps title/price and the graph tight and leaves any leftover
-// height as quiet balanced space above/below, not inside them.
+// Layout is three columns (title+price on the left, with the span-coverage
+// label on the price line, right-aligned against the graph; a bare
+// sparkline in the middle, no label above it; remove/pause/open stacked on
+// the right, flush to the border), top-aligned rather than centered or
+// stretched — three 24px buttons are the tallest column now, and centering
+// the shorter columns within that height pushed the title down away from
+// the card's own top padding, making it look uneven against the bottom.
+// Top-aligning keeps the gap above the title equal to the gap below the
+// meta row (both just the card's own padding); any leftover height from
+// the button column being taller shows up as quiet space before the meta
+// row instead.
 
 import { useState } from "react"
 import { ago, chaosText, divineText, type CardModel } from "./api"
@@ -80,9 +83,9 @@ export function TrackedCard({
 
   return (
     <div
-      className={`rounded-lg border border-neutral-700 bg-[#1a1a1a] p-1 ${card.active ? "" : "opacity-50"}`}
+      className={`rounded-lg border border-neutral-700 bg-[#1a1a1a] p-1.5 ${card.active ? "" : "opacity-50"}`}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-start gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           {editing ? (
             <input
@@ -142,17 +145,18 @@ export function TrackedCard({
                 ) : null}
               </>
             )}
+            {s.series.length >= 2 ? (
+              <span
+                className="ml-auto shrink-0 text-[9px] tabular-nums text-neutral-500"
+                title={SPAN_TOOLTIP}
+              >
+                {spanLabel(s.spanHours, s.windowHours)}
+              </span>
+            ) : null}
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col items-center gap-0.5">
-          {s.series.length >= 2 ? (
-            <span className="text-[9px] tabular-nums text-neutral-500" title={SPAN_TOOLTIP}>
-              {spanLabel(s.spanHours, s.windowHours)}
-            </span>
-          ) : null}
-          <Sparkline series={s.series} trend={s.trend} gapMarkers={s.gapMarkers} width={76} height={56} />
-        </div>
+        <Sparkline series={s.series} trend={s.trend} gapMarkers={s.gapMarkers} width={76} height={72} />
 
         <div className="flex shrink-0 flex-col items-end gap-px">
           <button
