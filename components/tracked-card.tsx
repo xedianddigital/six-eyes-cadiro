@@ -80,7 +80,7 @@ export function TrackedCard({
 
   return (
     <div
-      className={`rounded-lg border border-neutral-700 bg-[#1a1a1a] p-1 ${card.active ? "" : "opacity-50"}`}
+      className={`rounded-lg border border-neutral-700 bg-[#1a1a1a] p-0.5 ${card.active ? "" : "opacity-50"}`}
     >
       <div className="flex items-center gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -151,7 +151,7 @@ export function TrackedCard({
               {spanLabel(s.spanHours, s.windowHours)}
             </span>
           ) : null}
-          <Sparkline series={s.series} trend={s.trend} gapMarkers={s.gapMarkers} width={76} height={34} />
+          <Sparkline series={s.series} trend={s.trend} gapMarkers={s.gapMarkers} width={76} height={56} />
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-px">
@@ -182,14 +182,14 @@ export function TrackedCard({
       </div>
 
       <div className="mt-px flex items-center justify-between text-[11px] leading-tight tabular-nums pr-7">
-        <span className="flex gap-2" title={MISPRICED_TOOLTIP}>
+        <span className="flex items-center gap-2" title={MISPRICED_TOOLTIP}>
           <span className={s.countBelowHalfMedian > 0 ? "font-medium text-green-400" : "text-neutral-500"}>
             ≤50% {s.countBelowHalfMedian}
           </span>
           <span className={s.countBelow75PctMedian > 0 ? "font-medium text-amber-400" : "text-neutral-500"}>
             ≤75% {s.countBelow75PctMedian}
           </span>
-          <span className="text-xs text-neutral-400" title={LISTINGS_TOOLTIP}>
+          <span className="text-neutral-400" title={LISTINGS_TOOLTIP}>
             Listings: {s.count}
           </span>
         </span>
