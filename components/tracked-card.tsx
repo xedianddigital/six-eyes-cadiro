@@ -12,15 +12,20 @@
 //
 // Layout is three columns (title+price on the left, with the span-coverage
 // label on the price line, right-aligned against the graph; a bare
-// sparkline in the middle, no label above it; remove/pause/open stacked on
-// the right, flush to the border), top-aligned rather than centered or
-// stretched — three 24px buttons are the tallest column now, and centering
-// the shorter columns within that height pushed the title down away from
-// the card's own top padding, making it look uneven against the bottom.
-// Top-aligning keeps the gap above the title equal to the gap below the
-// meta row (both just the card's own padding); any leftover height from
-// the button column being taller shows up as quiet space before the meta
-// row instead.
+// sparkline in the middle, no label above it; remove/pause on the right,
+// flush to the border), top-aligned rather than centered or stretched so
+// the gap above the title stays equal to the gap below the meta row (both
+// just the card's own padding).
+//
+// Only two buttons stack on the right, not three: remove/pause span the
+// sparkline's own height via justify-between (top/bottom corners), which
+// is what gives them real separation without the column needing to be any
+// taller than the graph already is. "Open" used to be a third stacked
+// button, but that pushed the column taller than the graph and left the
+// leftover height as dead space below it once the row's height stopped
+// being dictated by 3 buttons + gaps. It now lives inline in the bottom
+// meta row instead (next to trend%/ago), reusing a row that already
+// exists rather than paying for a taller button column.
 
 import { useState } from "react"
 import { ago, chaosText, divineText, type CardModel } from "./api"
@@ -163,7 +168,12 @@ export function TrackedCard({
 
         <Sparkline series={s.series} trend={s.trend} gapMarkers={s.gapMarkers} width={76} height={72} />
 
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
+        {/* h-[72px] matches the sparkline's own height prop above (not the
+            ICON_BUTTON size) — justify-between then spends that whole span
+            putting remove/pause at opposite corners, so the gap between them
+            comes from height the graph already claims instead of adding any
+            of its own. */}
+        <div className="flex h-[72px] shrink-0 flex-col items-end justify-between">
           <button
             onClick={() => onRemove(card.id)}
             title="Remove"
@@ -178,19 +188,10 @@ export function TrackedCard({
           >
             {card.active ? "⏸" : "▶"}
           </button>
-          <a
-            href={card.url}
-            target="_blank"
-            rel="noreferrer"
-            title="Open on the trade site"
-            className={ICON_BUTTON + " text-neutral-300 hover:bg-neutral-800"}
-          >
-            ↗
-          </a>
         </div>
       </div>
 
-      <div className="mt-px flex items-center justify-between text-[11px] leading-tight tabular-nums pr-7">
+      <div className="mt-px flex items-center justify-between text-[11px] leading-tight tabular-nums">
         <span className="flex items-center gap-2" title={MISPRICED_TOOLTIP}>
           <span className={s.countBelowHalfMedian > 0 ? "font-medium text-green-400" : "text-neutral-500"}>
             ≤50% {s.countBelowHalfMedian}
@@ -202,8 +203,19 @@ export function TrackedCard({
             Listings: {s.count}
           </span>
         </span>
-        <span className={trendColor} title={metaTooltip}>
-          {s.trendPct != null ? `${s.trendPct > 0 ? "+" : ""}${s.trendPct}%` : "—"} · {ago(card.lastPolledAt)}
+        <span className="flex items-center gap-2">
+          <span className={trendColor} title={metaTooltip}>
+            {s.trendPct != null ? `${s.trendPct > 0 ? "+" : ""}${s.trendPct}%` : "—"} · {ago(card.lastPolledAt)}
+          </span>
+          <a
+            href={card.url}
+            target="_blank"
+            rel="noreferrer"
+            title="Open on the trade site"
+            className="shrink-0 text-neutral-500 hover:text-neutral-300"
+          >
+            ↗
+          </a>
         </span>
       </div>
     </div>
