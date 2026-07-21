@@ -12,6 +12,7 @@ import {
   getJson,
   sendJson,
   type CandidateModel,
+  type CardModel,
   type DashboardModel,
   type DraftModel,
 } from "@/components/api"
@@ -30,8 +31,18 @@ interface DiscoveryModel {
 
 type Tab = "tracked" | "import" | "discovery" | "logs"
 
+// Dashboard-only card filter: a calm background tint on a match, never a
+// text highlight — the grid is meant to be glanced at, and picking cards out
+// by border/background color reads faster than scanning highlighted text.
+function matchesFilter(card: CardModel, query: string): boolean {
+  const q = query.trim().toLowerCase()
+  if (!q) return false
+  return card.title.toLowerCase().includes(q) || card.notes.toLowerCase().includes(q)
+}
+
 export default function Page() {
   const [tab, setTab] = useState<Tab>("tracked")
+  const [search, setSearch] = useState("")
   const [dash, setDash] = useState<DashboardModel | null>(null)
   const [discovery, setDiscovery] = useState<DiscoveryModel | null>(null)
   const [drafts, setDrafts] = useState<DraftModel[]>([])
@@ -112,16 +123,30 @@ export default function Page() {
       {/* Title, tabs and account controls share one row on purpose — every
           row here is a row a 45-card grid doesn't get. Scheduler/divine
           status moves into the title's tooltip instead of its own line. */}
-      <header className="mb-3 flex items-center gap-4 border-b border-neutral-900 pb-3">
-        <h1 title={statusTooltip} className="shrink-0 text-base font-semibold text-neutral-100">
-          Six Eyes Cadiro
-        </h1>
+      <header title={statusTooltip} className="mb-3 flex items-center gap-4 border-b border-neutral-900 pb-3">
         <nav className="flex gap-1">
           {tabButton("tracked", "Dashboard", dash?.cards.length)}
           {tabButton("import", "Import", drafts.length)}
           {tabButton("discovery", "Discovery", discovery?.candidates.length)}
           {tabButton("logs", "Logs")}
         </nav>
+        <div className="flex items-center gap-1">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Filter cards…"
+            title="Highlights matching Dashboard cards by title/notes — doesn't hide the rest."
+            className="w-36 rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-sm text-neutral-200 placeholder:text-neutral-600"
+          />
+          {search ? (
+            <button
+              onClick={() => setSearch("")}
+              className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200"
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
         <div className="ml-auto flex items-center gap-3">
           <SessionPanel onChanged={() => void refresh()} />
         </div>
@@ -134,12 +159,13 @@ export default function Page() {
             every ~20 minutes; cards fill in as history accumulates.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[1920px]:grid-cols-6">
+          <div className="grid grid-cols-1 items-start gap-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[1920px]:grid-cols-6">
             {dash?.cards.map((card) => (
               <TrackedCard
                 key={card.id}
                 card={card}
                 divineRate={dash.divine.rate}
+                highlighted={matchesFilter(card, search)}
                 onPause={pause}
                 onRemove={remove}
                 onRename={rename}

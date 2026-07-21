@@ -54,6 +54,7 @@ function spanLabel(spanHours: number, windowHours: number): string {
 export function TrackedCard({
   card,
   divineRate,
+  highlighted,
   onPause,
   onRemove,
   onRename,
@@ -61,6 +62,8 @@ export function TrackedCard({
   card: CardModel
   /** Current chaos-per-divine rate, for the divine-equivalent shown next to the median. */
   divineRate: number
+  /** Header search filter matched this card's title/notes — tint the card, don't hide the rest. */
+  highlighted?: boolean
   onPause: (id: string, active: boolean) => void
   onRemove: (id: string) => void
   onRename: (id: string, title: string) => void
@@ -83,7 +86,9 @@ export function TrackedCard({
 
   return (
     <div
-      className={`rounded-lg border border-neutral-700 bg-[#1a1a1a] p-1.5 ${card.active ? "" : "opacity-50"}`}
+      className={`rounded-lg border p-1.5 ${
+        highlighted ? "border-cyan-700 bg-cyan-950/40" : "border-neutral-700 bg-[#1a1a1a]"
+      } ${card.active ? "" : "opacity-50"}`}
     >
       <div className="flex items-start gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">

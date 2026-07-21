@@ -159,6 +159,20 @@ export function ImportPanel({
             >
               Import file
             </button>
+            <span
+              className="cursor-help rounded border border-neutral-800 px-1.5 py-1 text-xs text-neutral-500"
+              title={
+                "Bulk file format (.md/.txt):\n\n" +
+                "# Item Name\n" +
+                "- variant | https://www.pathofexile.com/trade/search/League/id\n" +
+                "- another variant | https://www.pathofexile.com/trade/search/League/id2\n\n" +
+                "# Another Item\n" +
+                "- any | https://www.pathofexile.com/trade/search/League/id3\n\n" +
+                "One heading (#, ##, or a bare line) per item, then one \"- variant | url\" line per search."
+              }
+            >
+              Format ⓘ
+            </span>
             {drafts.length > 0 ? (
               <button
                 onClick={() => void clearAll()}
@@ -180,7 +194,7 @@ export function ImportPanel({
 
         {drafts.length === 0 ? (
           <div className="px-4 py-6 text-sm text-neutral-400">
-            No drafts yet. Add one above, or import a .md list — see docs/starter-picks.md for the format.
+            No drafts yet. Add one above, or import a .md list — hover "Format ⓘ" above for the exact syntax.
           </div>
         ) : (
           <table className="w-full text-sm">
