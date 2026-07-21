@@ -34,10 +34,16 @@ type Tab = "tracked" | "import" | "discovery" | "logs"
 // Dashboard-only card filter: a calm background tint on a match, never a
 // text highlight — the grid is meant to be glanced at, and picking cards out
 // by border/background color reads faster than scanning highlighted text.
+//
+// `?? ""` guards against on-disk searches saved before `notes` existed on
+// TrackedSearch — config.ts's readConfig() doesn't backfill old entries, so
+// `card.notes` can be `undefined` at runtime despite the type saying
+// `string`. Without the guard, typing a single character threw on every
+// keystroke (`.toLowerCase()` on undefined) and took the whole page down.
 function matchesFilter(card: CardModel, query: string): boolean {
   const q = query.trim().toLowerCase()
   if (!q) return false
-  return card.title.toLowerCase().includes(q) || card.notes.toLowerCase().includes(q)
+  return (card.title ?? "").toLowerCase().includes(q) || (card.notes ?? "").toLowerCase().includes(q)
 }
 
 export default function Page() {

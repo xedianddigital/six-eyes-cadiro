@@ -163,7 +163,7 @@ export function TrackedCard({
 
         <Sparkline series={s.series} trend={s.trend} gapMarkers={s.gapMarkers} width={76} height={72} />
 
-        <div className="flex shrink-0 flex-col items-end gap-px">
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
           <button
             onClick={() => onRemove(card.id)}
             title="Remove"
@@ -206,12 +206,6 @@ export function TrackedCard({
           {s.trendPct != null ? `${s.trendPct > 0 ? "+" : ""}${s.trendPct}%` : "—"} · {ago(card.lastPolledAt)}
         </span>
       </div>
-
-      {card.lastError ? (
-        <div className="mt-0.5 truncate text-[11px] text-amber-500" title={card.lastError}>
-          {card.lastError}
-        </div>
-      ) : null}
     </div>
   )
 }
